@@ -367,6 +367,17 @@ public class JsonArray implements Iterable<Object>, ClusterSerializable, Shareab
   }
 
   /**
+   * Add a Number to the JSON array.
+   *
+   * @param value  the value
+   * @return  a reference to this, so the API can be used fluently
+   */
+  public JsonArray add(Number value) {
+    list.add(value);
+    return this;
+  }
+
+  /**
    * Add a Boolean to the JSON array.
    *
    * @param value  the value
@@ -550,7 +561,7 @@ public class JsonArray implements Iterable<Object>, ClusterSerializable, Shareab
    * @return the string encoding
    */
   public String encode() {
-    return Json.encode(list);
+    return Json.encode(this);
   }
 
   /**
@@ -559,7 +570,7 @@ public class JsonArray implements Iterable<Object>, ClusterSerializable, Shareab
    * @return the buffer encoding.
    */
   public Buffer toBuffer() {
-    return Json.encodeToBuffer(list);
+    return Json.encodeToBuffer(this);
   }
 
   /**
@@ -568,7 +579,7 @@ public class JsonArray implements Iterable<Object>, ClusterSerializable, Shareab
    * @return the string encoding
    */
   public String encodePrettily() {
-    return Json.encodePrettily(list);
+    return Json.encodePrettily(this);
   }
 
   /**
@@ -657,11 +668,19 @@ public class JsonArray implements Iterable<Object>, ClusterSerializable, Shareab
   }
 
   private void fromJson(String json) {
-    list = Json.decodeValue(json, List.class);
+    try {
+      list = (List<Object>) Json.decodeValueInternal(json);
+    } catch (Exception e) {
+      throw new DecodeException(e);
+    }
   }
 
   private void fromBuffer(Buffer buf) {
-    list = Json.decodeValue(buf, List.class);
+    try {
+      list = (List<Object>) Json.decodeValueInternal(buf);
+    } catch (Exception e) {
+      throw new DecodeException(e);
+    }
   }
 
   private class Iter implements Iterator<Object> {

@@ -11,82 +11,157 @@
 
 package io.vertx.benchmarks;
 
-import io.netty.util.CharsetUtil;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.CompilerControl;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import java.io.IOException;
-import java.net.URL;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Thomas Segismont
+ * @author slinkydeveloper
  */
 @State(Scope.Thread)
 public class JsonDecodeBenchmark extends BenchmarkBase {
 
-  @CompilerControl(CompilerControl.Mode.DONT_INLINE)
-  public static void consume(final JsonObject jsonObject) {
-  }
-
   private Buffer small;
-  private Buffer large;
+  private Buffer wide;
+  private Buffer deep;
+  private String smallString;
+  private String wideString;
+  private String deepString;
+  private ObjectMapper jacksonMapper;
+  private JsonFactory jsonFactory;
 
   @Setup
   public void setup() {
-    ClassLoader classLoader = getClass().getClassLoader();
-    small = loadJsonAsBuffer(classLoader.getResource("small.json"));
-    large = loadJsonAsBuffer(classLoader.getResource("large.json"));
+    small = loadJsonAsBuffer("small_bench.json");
+    wide = loadJsonAsBuffer("wide_bench.json");
+    deep = loadJsonAsBuffer("deep_bench.json");
+    smallString = small.toString();
+    wideString = wide.toString();
+    deepString = deep.toString();
+    jacksonMapper = new ObjectMapper();
+    jsonFactory = new JsonFactory();
   }
 
-  private Buffer loadJsonAsBuffer(URL url) {
-    try {
-      Buffer encoded = new JsonObject(Json.mapper.readValue(url, Map.class)).toBuffer();
-      return Buffer.buffer().appendInt(encoded.length()).appendBuffer(encoded);
-    } catch (IOException e) {
+  private Buffer loadJsonAsBuffer(String filename) {
+    ClassLoader classLoader = getClass().getClassLoader();
+    try (InputStream file = classLoader.getResourceAsStream(filename)) {
+      String str = new BufferedReader(new InputStreamReader(file, StandardCharsets.UTF_8))
+        .lines()
+        .collect(Collectors.joining());
+      Buffer encoded = Buffer.buffer(str);
+      return Buffer.buffer().appendBuffer(encoded);
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
   @Benchmark
-  public void viaStringSmall() throws Exception {
-    viaString(small);
+  public void viaStringSmall(Blackhole blackhole) {
+    viaString(smallString, blackhole);
   }
 
   @Benchmark
-  public void viaStringLarge() throws Exception {
-    viaString(large);
-  }
-
-  private void viaString(Buffer buffer) throws Exception {
-    int pos = 0;
-    int length = buffer.getInt(pos);
-    pos += 4;
-    byte[] encoded = buffer.getBytes(pos, pos + length);
-    String str = new String(encoded, CharsetUtil.UTF_8);
-    consume(new JsonObject(str));
+  public void viaStringSmallJackson(Blackhole blackhole) throws Exception {
+    viaStringJackson(smallString, blackhole);
   }
 
   @Benchmark
-  public void directSmall() throws Exception {
-    direct(small);
+  public void viaStringSmallBaseline(Blackhole blackhole) throws Exception {
+    viaStringBaseline(smallString, blackhole);
   }
 
   @Benchmark
-  public void directLarge() throws Exception {
-    direct(large);
+  public void viaStringWide(Blackhole blackhole) {
+    viaString(wideString, blackhole);
   }
 
-  private void direct(Buffer buffer) throws Exception {
-    int pos = 0;
-    int length = buffer.getInt(pos);
-    pos += 4;
-    consume(new JsonObject(buffer.slice(pos, pos + length)));
+  @Benchmark
+  public void viaStringWideJackson(Blackhole blackhole) throws Exception {
+    viaStringJackson(wideString, blackhole);
+  }
+
+  @Benchmark
+  public void viaStringDeep(Blackhole blackhole) {
+    viaString(deepString, blackhole);
+  }
+
+  @Benchmark
+  public void viaStringDeepJackson(Blackhole blackhole) throws Exception {
+    viaStringJackson(deepString, blackhole);
+  }
+
+  private void viaString(String str, Blackhole blackhole) {
+    blackhole.consume(new JsonObject(str));
+  }
+
+  private void viaStringJackson(String str, Blackhole blackhole) throws Exception {
+    Map decoded = jacksonMapper.readValue(str, Map.class);
+    blackhole.consume(new JsonObject(decoded));
+  }
+
+  private void viaStringBaseline(String str, Blackhole blackhole) throws Exception {
+    JsonParser parser = jsonFactory.createParser(str);
+    int val = 0;
+    JsonToken token;
+    while ((token = parser.nextToken()) != null) {
+      val += token.hashCode();
+    }
+    blackhole.consume(val);
+  }
+
+  @Benchmark
+  public void directSmall(Blackhole blackhole) {
+    direct(small, blackhole);
+  }
+
+  @Benchmark
+  public void directSmallJackson(Blackhole blackhole) throws Exception {
+    directJackson(small, blackhole);
+  }
+
+  @Benchmark
+  public void directWide(Blackhole blackhole) {
+    direct(wide, blackhole);
+  }
+
+  @Benchmark
+  public void directWideJackson(Blackhole blackhole) throws Exception {
+    directJackson(wide, blackhole);
+  }
+
+  @Benchmark
+  public void directDeep(Blackhole blackhole) {
+    direct(deep, blackhole);
+  }
+
+  @Benchmark
+  public void directDeepJackson(Blackhole blackhole) throws Exception {
+    directJackson(deep, blackhole);
+  }
+
+  private void direct(Buffer buffer, Blackhole blackhole) {
+    blackhole.consume(new JsonObject(buffer));
+  }
+
+  private void directJackson(Buffer buffer, Blackhole blackhole) throws Exception {
+    Map decoded = jacksonMapper.readValue(buffer.getBytes(), Map.class);
+    blackhole.consume(new JsonObject(decoded));
   }
 }

@@ -129,6 +129,7 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <!-- Loggers -->
@@ -447,6 +448,34 @@
                 <classpathDependencyExclude>io.netty:netty-transport-native-epoll</classpathDependencyExclude>
                 <classpathDependencyExclude>io.netty:netty-transport-native-kqueue</classpathDependencyExclude>
               </classpathDependencyExcludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>no-jackson-databind</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+            <phase>integration-test</phase>
+            <configuration>
+              <includes>
+                <include>io/vertx/core/json/*</include>
+                <include>io/vertx/core/parsetools/JsonParserTest.java</include>
+              </includes>
+              <classpathDependencyExcludes>
+                <classpathDependencyExclude>com.fasterxml.jackson.core:jackson-databind</classpathDependencyExclude>
+              </classpathDependencyExcludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>jackson-databind</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+            <phase>integration-test</phase>
+            <configuration>
+              <includes>
+                <include>io/vertx/it/JsonPOJOMapperTest.java</include>
+              </includes>
             </configuration>
           </execution>
           <execution>

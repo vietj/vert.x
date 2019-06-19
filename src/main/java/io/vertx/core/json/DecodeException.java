@@ -11,6 +11,8 @@
 
 package io.vertx.core.json;
 
+import com.fasterxml.jackson.core.JsonLocation;
+
 /**
  * Instances of this Exception are thrown if failed to decode a JSON string, because of invalid JSON.
  *
@@ -18,8 +20,7 @@ package io.vertx.core.json;
  */
 public class DecodeException extends RuntimeException {
 
-  public DecodeException() {
-  }
+  public DecodeException() { }
 
   public DecodeException(String message) {
     super(message);
@@ -27,5 +28,17 @@ public class DecodeException extends RuntimeException {
 
   public DecodeException(String message, Throwable cause) {
     super(message, cause);
+  }
+
+  public DecodeException(Throwable cause) {
+    this("Failed to decode: " + cause.getMessage(), cause);
+  }
+
+  static DecodeException create(String e, JsonLocation location) {
+    return new DecodeException(String.format(
+      "Failed to decode %s: %s",
+      location != JsonLocation.NA ? "at " + location.getLineNr() + ":" + location.getColumnNr() : "",
+      e
+    ), null);
   }
 }

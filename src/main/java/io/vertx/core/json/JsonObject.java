@@ -101,11 +101,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
    */
   @SuppressWarnings("unchecked")
   public static JsonObject mapFrom(Object obj) {
-    if (obj == null) {
-      return null;
-    } else {
-      return new JsonObject((Map<String, Object>) Json.mapper.convertValue(obj, Map.class));
-    }
+    return (JsonObject) Json.mapFrom(obj);
   }
 
   /**
@@ -118,7 +114,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
    *          if the type cannot be instantiated.
    */
   public <T> T mapTo(Class<T> type) {
-    return Json.mapper.convertValue(map, type);
+    return Json.mapTo(this, type);
   }
 
   /**
@@ -606,6 +602,19 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
   }
 
   /**
+   * Put a Number into the JSON object with the specified key.
+   *
+   * @param key  the key
+   * @param value  the value
+   * @return  a reference to this, so the API can be used fluently
+   */
+  public JsonObject put(String key, Number value) {
+    Objects.requireNonNull(key);
+    map.put(key, value);
+    return this;
+  }
+
+  /**
    * Put a Boolean into the JSON object with the specified key.
    *
    * @param key  the key
@@ -779,7 +788,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
    * @return the string encoding.
    */
   public String encode() {
-    return Json.encode(map);
+    return Json.encode(this);
   }
 
   /**
@@ -789,7 +798,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
    * @return the pretty string encoding.
    */
   public String encodePrettily() {
-    return Json.encodePrettily(map);
+    return Json.encodePrettily(this);
   }
 
   /**
@@ -798,7 +807,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
    * @return the buffer encoding.
    */
   public Buffer toBuffer() {
-    return Json.encodeToBuffer(map);
+    return Json.encodeToBuffer(this);
   }
 
   /**
@@ -968,11 +977,19 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
   }
 
   private void fromJson(String json) {
-    map = Json.decodeValue(json, Map.class);
+    try {
+      this.map = (Map<String, Object>) Json.decodeValueInternal(json);
+    } catch (Exception e) {
+      throw new DecodeException(e);
+    }
   }
 
   private void fromBuffer(Buffer buf) {
-    map = Json.decodeValue(buf, Map.class);
+    try {
+      this.map = (Map<String, Object>) Json.decodeValueInternal(buf);
+    } catch (Exception e) {
+      throw new DecodeException(e);
+    }
   }
 
   private class Iter implements Iterator<Map.Entry<String, Object>> {

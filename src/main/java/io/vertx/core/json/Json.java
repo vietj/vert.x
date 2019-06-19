@@ -11,216 +11,208 @@
 
 package io.vertx.core.json;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import io.netty.buffer.ByteBufInputStream;
 import io.vertx.core.buffer.Buffer;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.StringWriter;
 import java.math.BigDecimal;
-import java.time.DateTimeException;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
 /**
+ * @author <a href="https://slinkydeveloper.com">slinkydeveloper</a>
  * @author <a href="http://tfox.org">Tim Fox</a>
  */
 public class Json {
 
-  public static ObjectMapper mapper = new ObjectMapper();
-  public static ObjectMapper prettyMapper = new ObjectMapper();
+  public static final JsonFactory factory = new JsonFactory();
+  public static final JsonMapper mapper = load();
 
   static {
     // Non-standard JSON but we allow C style comments in our JSON
-    mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-
-    prettyMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-    prettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-
-    SimpleModule module = new SimpleModule();
-    // custom types
-    module.addSerializer(JsonObject.class, new JsonObjectSerializer());
-    module.addSerializer(JsonArray.class, new JsonArraySerializer());
-    // he have 2 extensions: RFC-7493
-    module.addSerializer(Instant.class, new InstantSerializer());
-    module.addDeserializer(Instant.class, new InstantDeserializer());
-    module.addSerializer(byte[].class, new ByteArraySerializer());
-    module.addDeserializer(byte[].class, new ByteArrayDeserializer());
-
-    mapper.registerModule(module);
-    prettyMapper.registerModule(module);
+    factory.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
   }
 
   /**
-   * Encode a POJO to JSON using the underlying Jackson mapper.
+   * Encode a POJO or a Vert.x json data structure to a String containing the JSON representation
    *
-   * @param obj a POJO
-   * @return a String containing the JSON representation of the given POJO.
-   * @throws EncodeException if a property cannot be encoded.
+   * @param value a valid Vert.x json ({@link JsonObject}, {@link JsonArray} or primitive) or a POJO.
+   * @return a String containing the JSON representation of the given json.
+   * @throws EncodeException when the json cannot be encoded
    */
-  public static String encode(Object obj) throws EncodeException {
+  public static String encode(Object value) throws EncodeException {
     try {
-      return mapper.writeValueAsString(obj);
-    } catch (Exception e) {
-      throw new EncodeException("Failed to encode as JSON: " + e.getMessage());
+      Object json = mapFrom(value);
+      StringWriter sw = new StringWriter();
+      JsonGenerator generator = factory.createGenerator(sw);
+      encodeJson(json, generator);
+      generator.flush();
+      return sw.toString();
+    } catch (IOException e) {
+      throw new EncodeException(e);
     }
   }
 
   /**
-   * Encode a POJO to JSON using the underlying Jackson mapper.
+   * Encode a POJO or a Vert.x json data structure to a {@link Buffer} containing the JSON representation
    *
-   * @param obj a POJO
-   * @return a Buffer containing the JSON representation of the given POJO.
-   * @throws EncodeException if a property cannot be encoded.
+   * @param value a valid Vert.x json ({@link JsonObject}, {@link JsonArray} or primitive) or a POJO.
+   * @return a Buffer containing the JSON representation of the given json.
+   * @throws EncodeException when the json cannot be encoded
    */
-  public static Buffer encodeToBuffer(Object obj) throws EncodeException {
+  public static Buffer encodeToBuffer(Object value) throws EncodeException {
+    return Buffer.buffer(encode(value));
+  }
+
+  /**
+   * Encode a POJO or a Vert.x json data structure to JSON with pretty indentation
+   *
+   * @param value a valid Vert.x json ({@link JsonObject}, {@link JsonArray} or primitive) or a POJO.
+   * @return a String containing the JSON representation of the given json.
+   * @throws EncodeException when the json cannot be encoded
+   */
+  public static String encodePrettily(Object value) throws EncodeException {
     try {
-      return Buffer.buffer(mapper.writeValueAsBytes(obj));
-    } catch (Exception e) {
-      throw new EncodeException("Failed to encode as JSON: " + e.getMessage());
+      Object json = mapFrom(value);
+      StringWriter sw = new StringWriter();
+      JsonGenerator generator = factory.createGenerator(sw);
+      generator.useDefaultPrettyPrinter();
+      encodeJson(json, generator);
+      generator.flush();
+      return sw.toString();
+    } catch (IOException e) {
+      throw new EncodeException(e);
     }
   }
 
   /**
-   * Encode a POJO to JSON with pretty indentation, using the underlying Jackson mapper.
+   * Convert a POJO to a Vert.x json data structure.
+   * <p>
+   * This method tries to use a matching {@link io.vertx.core.spi.json.JsonCodec} for the provided {@code pojo}.
+   * If no {@link io.vertx.core.spi.json.JsonCodec} is found, it fallbacks to jackson-databind if you have provided it as project dependency,
+   * otherwise it throws a {@link DecodeException}
    *
-   * @param obj a POJO
-   * @return a String containing the JSON representation of the given POJO.
-   * @throws EncodeException if a property cannot be encoded.
+   * @param pojo the pojo to convert
+   * @return a valid Vert.x json ({@link JsonObject}, {@link JsonArray} or primitive).
+   * @throws EncodeException If there was an error during encoding or the internal mapper can't encode the provided pojo
    */
-  public static String encodePrettily(Object obj) throws EncodeException {
+  public static Object mapFrom(Object pojo) throws EncodeException {
     try {
-      return prettyMapper.writeValueAsString(obj);
-    } catch (Exception e) {
-      throw new EncodeException("Failed to encode as JSON: " + e.getMessage());
+      if (pojo instanceof JsonObject || pojo instanceof JsonArray || pojo instanceof Number || pojo instanceof Boolean || pojo instanceof String || pojo == null)
+        return pojo;
+      else
+        return mapper.encode(pojo);
+    } catch (IllegalStateException e) {
+      throw new EncodeException(e);
+    }
+  }
+
+  /**
+   * Decode a given JSON string to a Vert.x Json data structure.
+   *
+   * @param str the JSON string.
+   *
+   * @return a valid Vert.x json ({@link JsonObject}, {@link JsonArray} or primitive).
+   * @throws DecodeException when the json cannot be decoded
+   */
+  public static Object decodeValue(String str) throws DecodeException {
+    return wrapIfNecessary(decodeValueInternal(str));
+  }
+
+  /**
+   * Decode a given JSON buffer to a Vert.x Json data structure.
+   *
+   * @param buf the JSON buffer.
+   *
+   * @return a valid Vert.x json ({@link JsonObject}, {@link JsonArray} or primitive).
+   * @throws DecodeException when the json cannot be decoded.
+   */
+  public static Object decodeValue(Buffer buf) throws DecodeException {
+    return wrapIfNecessary(decodeValueInternal(buf));
+  }
+
+  /**
+   * Convert a Vert.x json data structure to a POJO.
+   * <p>
+   * This method tries to use a matching {@link io.vertx.core.spi.json.JsonCodec} for the provided {@code clazz}.
+   * If no {@link io.vertx.core.spi.json.JsonCodec} is found, it fallbacks to jackson-databind if you have provided it as project dependency,
+   * otherwise it throws an {@link DecodeException}
+   *
+   * @param json the json data structure.
+   * @param clazz the class to map to.
+   * @return an instance of the class to map to.
+   * @throws DecodeException If there was an error during decoding or the internal mapper can't decode the provided pojo.
+   */
+  public static <T> T mapTo(Object json, Class<T> clazz) throws DecodeException {
+    try {
+      return mapper.decode(json, clazz);
+    } catch (IllegalStateException e) {
+      throw new DecodeException(e);
     }
   }
 
   /**
    * Decode a given JSON string to a POJO of the given class type.
+   *
    * @param str the JSON string.
    * @param clazz the class to map to.
    * @param <T> the generic type.
-   * @return an instance of T
-   * @throws DecodeException when there is a parsing or invalid mapping.
+   * @return an instance of T.
+   * @throws DecodeException If there was an error during decoding or the internal mapper can't decode the provided pojo.
    */
   public static <T> T decodeValue(String str, Class<T> clazz) throws DecodeException {
-    try {
-      return mapper.readValue(str, clazz);
-    } catch (Exception e) {
-      throw new DecodeException("Failed to decode: " + e.getMessage());
-    }
+    return mapTo(decodeValue(str), clazz);
   }
 
   /**
-   * Decode a given JSON string.
+   * Decode a given JSON string to a POJO of the given class type.
+   * <p>
+   * You need {@code jackson-databind} in your classpath
    *
-   * @param str the JSON string.
-   *
-   * @return a JSON element which can be a {@link JsonArray}, {@link JsonObject}, {@link String}, ...etc if the content is an array, object, string, ...etc
-   * @throws DecodeException when there is a parsing or invalid mapping.
-   */
-  public static Object decodeValue(String str) throws DecodeException {
-    try {
-      Object value = mapper.readValue(str, Object.class);
-      if (value instanceof List) {
-        List list = (List) value;
-        return new JsonArray(list);
-      } else if (value instanceof Map) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> map = (Map<String, Object>) value;
-        return new JsonObject(map);
-      }
-      return value;
-    } catch (Exception e) {
-      throw new DecodeException("Failed to decode: " + e.getMessage());
-    }
-  }
-
-  /**
-   * Decode a given JSON string to a POJO of the given type.
    * @param str the JSON string.
    * @param type the type to map to.
    * @param <T> the generic type.
-   * @return an instance of T
-   * @throws DecodeException when there is a parsing or invalid mapping.
+   * @return an instance of T.
+   * @throws DecodeException If there was an error during decoding or the internal mapper can't decode the provided pojo.
    */
   public static <T> T decodeValue(String str, TypeReference<T> type) throws DecodeException {
     try {
-      return mapper.readValue(str, type);
-    } catch (Exception e) {
-      throw new DecodeException("Failed to decode: " + e.getMessage(), e);
-    }
-  }
-
-  /**
-   * Decode a given JSON buffer.
-   *
-   * @param buf the JSON buffer.
-   *
-   * @return a JSON element which can be a {@link JsonArray}, {@link JsonObject}, {@link String}, ...etc if the buffer contains an array, object, string, ...etc
-   * @throws DecodeException when there is a parsing or invalid mapping.
-   */
-  public static Object decodeValue(Buffer buf) throws DecodeException {
-    try {
-      Object value = mapper.readValue((InputStream) new ByteBufInputStream(buf.getByteBuf()), Object.class);
-      if (value instanceof List) {
-        List list = (List) value;
-        return new JsonArray(list);
-      } else if (value instanceof Map) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> map = (Map<String, Object>) value;
-        return new JsonObject(map);
-      }
-      return value;
-    } catch (Exception e) {
-      throw new DecodeException("Failed to decode: " + e.getMessage());
+      return mapper.decode(decodeValue(str), type);
+    } catch (IllegalStateException e) {
+      throw new DecodeException(e);
     }
   }
 
   /**
    * Decode a given JSON buffer to a POJO of the given class type.
-   * @param buf the JSON buffer.
-   * @param type the type to map to.
-   * @param <T> the generic type.
-   * @return an instance of T
-   * @throws DecodeException when there is a parsing or invalid mapping.
-   */
-  public static <T> T decodeValue(Buffer buf, TypeReference<T> type) throws DecodeException {
-    try {
-      return mapper.readValue(new ByteBufInputStream(buf.getByteBuf()), type);
-    } catch (Exception e) {
-      throw new DecodeException("Failed to decode:" + e.getMessage(), e);
-    }
-  }
-
-  /**
-   * Decode a given JSON buffer to a POJO of the given class type.
+   *
    * @param buf the JSON buffer.
    * @param clazz the class to map to.
    * @param <T> the generic type.
-   * @return an instance of T
-   * @throws DecodeException when there is a parsing or invalid mapping.
+   * @return an instance of T.
+   * @throws DecodeException If there was an error during decoding or the internal mapper can't decode the provided pojo.
    */
   public static <T> T decodeValue(Buffer buf, Class<T> clazz) throws DecodeException {
-    try {
-      return mapper.readValue((InputStream) new ByteBufInputStream(buf.getByteBuf()), clazz);
-    } catch (Exception e) {
-      throw new DecodeException("Failed to decode:" + e.getMessage(), e);
-    }
+    return decodeValue(buf.toString(), clazz);
+  }
+
+  /**
+   * Decode a given JSON buffer to a POJO of the given class type.
+   *
+   * @param buf the JSON buffer.
+   * @param type the type to map to.
+   * @param <T> the generic type.
+   * @return an instance of T.
+   * @throws DecodeException If there was an error during decoding or the internal mapper can't decode the provided pojo.
+   */
+  public static <T> T decodeValue(Buffer buf, TypeReference<T> type) throws DecodeException {
+    return decodeValue(buf.toString(), type);
   }
 
   @SuppressWarnings("unchecked")
@@ -272,57 +264,183 @@ public class Json {
     return StreamSupport.stream(iterable.spliterator(), false);
   }
 
-  private static class JsonObjectSerializer extends JsonSerializer<JsonObject> {
-    @Override
-    public void serialize(JsonObject value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-      jgen.writeObject(value.getMap());
+  private static Object wrapIfNecessary(Object o) {
+    if (o instanceof Map) {
+      o = new JsonObject((Map<String, Object>) o);
+    } else if (o instanceof List) {
+      o = new JsonArray((List) o);
+    }
+    return o;
+  }
+
+  static Object decodeValueInternal(String str) throws DecodeException {
+    JsonParser parser;
+    try {
+      parser = factory.createParser(str);
+    } catch (IOException e) {
+      throw new DecodeException(e);
+    }
+    try {
+      parser.nextToken();
+      return decodeJsonInternal(parser);
+    } catch (IOException e) {
+      throw new DecodeException(e);
+    } finally {
+      close(parser);
     }
   }
 
-  private static class JsonArraySerializer extends JsonSerializer<JsonArray> {
-    @Override
-    public void serialize(JsonArray value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-      jgen.writeObject(value.getList());
+  static Object decodeValueInternal(Buffer buf) throws DecodeException {
+    JsonParser parser;
+    try {
+      parser = factory.createParser(buf.getBytes());
+    } catch (IOException e) {
+      throw new DecodeException(e);
+    }
+    try {
+      parser.nextToken();
+      return decodeJsonInternal(parser);
+    } catch (IOException e) {
+      throw new DecodeException(e);
+    } finally {
+      close(parser);
     }
   }
 
-  private static class InstantSerializer extends JsonSerializer<Instant> {
-    @Override
-    public void serialize(Instant value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-      jgen.writeString(ISO_INSTANT.format(value));
+  private static void close(JsonParser parser) {
+    try {
+      parser.close();
+    } catch (IOException ignore) {
     }
   }
 
-  private static class InstantDeserializer extends JsonDeserializer<Instant> {
-    @Override
-    public Instant deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-      String text = p.getText();
-      try {
-        return Instant.from(ISO_INSTANT.parse(text));
-      } catch (DateTimeException e) {
-        throw new InvalidFormatException(p, "Expected an ISO 8601 formatted date time", text, Instant.class);
+  private static Object decodeJsonInternal(JsonParser parser) throws IOException, DecodeException {
+    // Check if root object is a primitive or not
+    switch (parser.getCurrentTokenId()) {
+      case JsonTokenId.ID_START_OBJECT:
+        return decodeObject(parser);
+      case JsonTokenId.ID_START_ARRAY:
+        return decodeArray(parser);
+      case JsonTokenId.ID_STRING:
+        return parser.getText();
+      case JsonTokenId.ID_NUMBER_FLOAT:
+      case JsonTokenId.ID_NUMBER_INT:
+        return parser.getNumberValue();
+      case JsonTokenId.ID_TRUE:
+        return Boolean.TRUE;
+      case JsonTokenId.ID_FALSE:
+        return Boolean.FALSE;
+      case JsonTokenId.ID_NULL:
+        return null;
+      default:
+        throw DecodeException.create("Unexpected token", parser.getCurrentLocation());
+    }
+  }
+
+  private static Map<String, Object> decodeObject(JsonParser parser) throws IOException {
+    String key1 = parser.nextFieldName();
+    if (key1 == null) {
+      return new LinkedHashMap<>(2);
+    }
+    parser.nextToken();
+    Object value1 = decodeJsonInternal(parser);
+    String key2 = parser.nextFieldName();
+    if (key2 == null) {
+      LinkedHashMap<String, Object> object = new LinkedHashMap<>(2);
+      object.put(key1, value1);
+      return object;
+    }
+    parser.nextToken();
+    Object value2 = decodeJsonInternal(parser);
+    String key = parser.nextFieldName();
+    if (key == null) {
+      LinkedHashMap<String, Object> object = new LinkedHashMap<>(2);
+      object.put(key1, value1);
+      object.put(key2, value2);
+      return object;
+    }
+    // General case
+    LinkedHashMap<String, Object> object = new LinkedHashMap<>();
+    object.put(key1, value1);
+    object.put(key2, value2);
+    do {
+      parser.nextToken();
+      Object value = decodeJsonInternal(parser);
+      object.put(key, value);
+      key = parser.nextFieldName();
+    } while (key != null);
+    return object;
+  }
+
+  private static List<Object> decodeArray(JsonParser parser) throws IOException {
+    List<Object> array = new ArrayList<>();
+    while (true) {
+      parser.nextToken();
+      int tokenId = parser.getCurrentTokenId();
+      if (tokenId == JsonTokenId.ID_FIELD_NAME) {
+        throw new UnsupportedOperationException();
+      } else if (tokenId == JsonTokenId.ID_END_ARRAY) {
+        return array;
       }
+      Object value = decodeJsonInternal(parser);
+      array.add(value);
     }
   }
 
-  private static class ByteArraySerializer extends JsonSerializer<byte[]> {
-
-    @Override
-    public void serialize(byte[] value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-      jgen.writeString(Base64.getEncoder().encodeToString(value));
-    }
-  }
-
-  private static class ByteArrayDeserializer extends JsonDeserializer<byte[]> {
-
-    @Override
-    public byte[] deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-      String text = p.getText();
-      try {
-        return Base64.getDecoder().decode(text);
-      } catch (IllegalArgumentException e) {
-        throw new InvalidFormatException(p, "Expected a base64 encoded byte array", text, Instant.class);
+  // In recursive calls, the callee is in charge of opening and closing the data structure
+  static void encodeJson(Object json, JsonGenerator generator) throws EncodeException {
+    try {
+      if (json instanceof JsonObject) {
+        generator.writeStartObject();
+        for (Map.Entry<String, Object> e : (JsonObject)json) {
+          generator.writeFieldName(e.getKey());
+          encodeJson(e.getValue(), generator);
+        }
+        generator.writeEndObject();
       }
+      if (json instanceof JsonArray) {
+        generator.writeStartArray();
+        for (Object item : (JsonArray)json) {
+          encodeJson(item, generator);
+        }
+        generator.writeEndArray();
+      }
+      if (json instanceof String) {
+        generator.writeString((String)json);
+      }
+      if (json instanceof Number) {
+        if (json instanceof Short) {
+          generator.writeNumber((Short) json);
+        }
+        if (json instanceof Integer) {
+          generator.writeNumber((Integer) json);
+        }
+        if (json instanceof Long) {
+          generator.writeNumber((Long) json);
+        }
+        if (json instanceof Float) {
+          generator.writeNumber((Float) json);
+        }
+        if (json instanceof Double) {
+          generator.writeNumber((Double) json);
+        }
+      }
+      if (json instanceof Boolean) {
+        generator.writeBoolean((Boolean)json);
+      }
+      if (json == null) {
+        generator.writeNull();
+      }
+    } catch (IOException e) {
+      throw new EncodeException(e);
+    }
+  }
+
+  private static JsonMapper load() {
+    try {
+      return new JacksonMapper();
+    } catch (Throwable t1) {
+      return new JsonCodecMapper();
     }
   }
 }
