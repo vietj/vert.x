@@ -68,14 +68,13 @@ public class JsonTest extends VertxTestBase {
         req.response().end("hello");
       }).listen(DEFAULT_HTTP_PORT, DEFAULT_HTTP_HOST, onSuccess(s -> {
         HttpClient client = vertx.createHttpClient();
-        client.get(DEFAULT_HTTP_PORT, DEFAULT_HTTP_HOST, "/", resp -> {
+        client.getNow(DEFAULT_HTTP_PORT, DEFAULT_HTTP_HOST, "/", onSuccess(resp -> {
           resp.exceptionHandler(this::fail);
           resp.bodyHandler(body -> {
             assertEquals("hello", body.toString());
             testComplete();
           });
-        }).exceptionHandler(this::fail)
-          .end();
+        }));
       }));
       await();
     } finally {
