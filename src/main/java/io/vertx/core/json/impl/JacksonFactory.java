@@ -18,8 +18,20 @@ import io.vertx.core.spi.JsonFactory;
  */
 public class JacksonFactory implements JsonFactory {
 
+  public static JacksonCodec MAPPER;
+
+  static {
+    JacksonCodec codec;
+    try {
+      codec = new DatabindCodec();
+    } catch (Exception e) {
+      codec = new JacksonCodec();
+    }
+    MAPPER = codec;
+  }
+
   @Override
   public JacksonCodec codec() {
-    return new JacksonCodec();
+    return MAPPER;
   }
 }
