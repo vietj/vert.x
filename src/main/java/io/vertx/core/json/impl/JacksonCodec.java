@@ -20,12 +20,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
+import io.vertx.core.ServiceHelper;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.EncodeException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.json.JsonCodec;
+import io.vertx.core.spi.json.JsonMapper;
+import io.vertx.core.spi.json.JsonSerializer;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -38,9 +41,13 @@ import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 
@@ -54,6 +61,18 @@ public class JacksonCodec implements JsonCodec {
   static {
     // Non-standard JSON but we allow C style comments in our JSON
     factory.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+  }
+
+  private final Map<Class, JsonMapper> mappers;
+
+  public JacksonCodec() {
+
+    Collection<JsonMapper> mappers = ServiceHelper.loadFactories(JsonMapper.class);
+
+
+    this.mappers = mappers.stream().collect(Collectors.toMap(JsonSerializer::getTargetClass, Function.identity()));
+
+
   }
 
   @Override

@@ -6,3 +6,4 @@ io.vertx.core.json.mappers.MyJsonArrayPojo$MyJsonArrayPojoJsonMapper
 io.vertx.core.json.mappers.MyJsonObjectPojo$MyJsonObjectPojoJsonMapper
 io.vertx.core.json.mappers.MyLongPojo$MyLongPojoJsonMapper
 io.vertx.core.json.mappers.MyShortPojo$MyShortPojoJsonMapper
+io.vertx.core.json.mappers.MyPojo$MyPojoJsonMapper
