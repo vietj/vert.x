@@ -4,23 +4,23 @@ import io.vertx.core.spi.json.JsonMapper;
 
 import java.util.Objects;
 
-public class MyBooleanPojo {
+public class BooleanPojo {
 
-  public static class MyBooleanPojoJsonMapper implements JsonMapper<MyBooleanPojo, Boolean> {
+  public static class BooleanPojoMapper implements JsonMapper<BooleanPojo, Boolean> {
 
     @Override
-    public MyBooleanPojo deserialize(Boolean value) throws IllegalArgumentException {
-      return new MyBooleanPojo().setValue(value);
+    public BooleanPojo deserialize(Boolean value) throws IllegalArgumentException {
+      return new BooleanPojo().setValue(value);
     }
 
     @Override
-    public Boolean serialize(MyBooleanPojo value) throws IllegalArgumentException {
+    public Boolean serialize(BooleanPojo value) throws IllegalArgumentException {
       return value.isValue();
     }
 
     @Override
-    public Class<MyBooleanPojo> getTargetClass() {
-      return MyBooleanPojo.class;
+    public Class<BooleanPojo> getTargetClass() {
+      return BooleanPojo.class;
     }
   }
 
@@ -30,7 +30,7 @@ public class MyBooleanPojo {
     return value;
   }
 
-  public MyBooleanPojo setValue(boolean value) {
+  public BooleanPojo setValue(boolean value) {
     this.value = value;
     return this;
   }
@@ -39,7 +39,7 @@ public class MyBooleanPojo {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    MyBooleanPojo that = (MyBooleanPojo) o;
+    BooleanPojo that = (BooleanPojo) o;
     return value == that.value;
   }
 

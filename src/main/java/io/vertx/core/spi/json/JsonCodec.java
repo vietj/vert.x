@@ -44,7 +44,7 @@ public interface JsonCodec {
   /**
    * Like {@link #fromString(String, Class)} but with a json {@code Object}
    */
-  <T> T fromValue(Object json, Class<T> toValueType);
+  <T> T fromValue(Object json, Class<T> clazz) throws DecodeException;
 
   /**
    * Encode the specified {@code object} to a string.
@@ -74,4 +74,6 @@ public interface JsonCodec {
   default Buffer toBuffer(Object object) throws EncodeException {
     return toBuffer(object, false);
   }
+
+  <T> T toValue(Object object, Class<T> toJsonType) throws EncodeException;
 }

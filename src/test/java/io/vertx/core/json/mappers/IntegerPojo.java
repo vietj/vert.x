@@ -4,23 +4,23 @@ import io.vertx.core.spi.json.JsonMapper;
 
 import java.util.Objects;
 
-public class MyIntegerPojo {
+public class IntegerPojo {
 
-  public static class MyIntegerPojoJsonMapper implements JsonMapper<MyIntegerPojo, Number> {
+  public static class IntegerPojoMapper implements JsonMapper<IntegerPojo, Number> {
 
     @Override
-    public MyIntegerPojo deserialize(Number value) throws IllegalArgumentException {
-      return new MyIntegerPojo().setValue(value.intValue());
+    public IntegerPojo deserialize(Number value) throws IllegalArgumentException {
+      return new IntegerPojo().setValue(value.intValue());
     }
 
     @Override
-    public Integer serialize(MyIntegerPojo value) throws IllegalArgumentException {
+    public Integer serialize(IntegerPojo value) throws IllegalArgumentException {
       return value.getValue();
     }
 
     @Override
-    public Class<MyIntegerPojo> getTargetClass() {
-      return MyIntegerPojo.class;
+    public Class<IntegerPojo> getTargetClass() {
+      return IntegerPojo.class;
     }
   }
 
@@ -30,7 +30,7 @@ public class MyIntegerPojo {
     return value;
   }
 
-  public MyIntegerPojo setValue(int value) {
+  public IntegerPojo setValue(int value) {
     this.value = value;
     return this;
   }
@@ -39,7 +39,7 @@ public class MyIntegerPojo {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    MyIntegerPojo that = (MyIntegerPojo) o;
+    IntegerPojo that = (IntegerPojo) o;
     return value == that.value;
   }
 

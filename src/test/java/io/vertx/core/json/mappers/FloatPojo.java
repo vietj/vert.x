@@ -4,33 +4,33 @@ import io.vertx.core.spi.json.JsonMapper;
 
 import java.util.Objects;
 
-public class MyLongPojo {
+public class FloatPojo {
 
-  public static class MyLongPojoJsonMapper implements JsonMapper<MyLongPojo, Number> {
+  public static class FloatPojoMapper implements JsonMapper<FloatPojo, Number> {
 
     @Override
-    public MyLongPojo deserialize(Number value) throws IllegalArgumentException {
-      return new MyLongPojo().setValue(value.longValue());
+    public FloatPojo deserialize(Number value) throws IllegalArgumentException {
+      return new FloatPojo().setValue(value.floatValue());
     }
 
     @Override
-    public Long serialize(MyLongPojo value) throws IllegalArgumentException {
+    public Float serialize(FloatPojo value) throws IllegalArgumentException {
       return value.getValue();
     }
 
     @Override
-    public Class<MyLongPojo> getTargetClass() {
-      return MyLongPojo.class;
+    public Class<FloatPojo> getTargetClass() {
+      return FloatPojo.class;
     }
   }
 
-  long value;
+  float value;
 
-  public long getValue() {
+  public float getValue() {
     return value;
   }
 
-  public MyLongPojo setValue(long value) {
+  public FloatPojo setValue(float value) {
     this.value = value;
     return this;
   }
@@ -39,7 +39,7 @@ public class MyLongPojo {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    MyLongPojo that = (MyLongPojo) o;
+    FloatPojo that = (FloatPojo) o;
     return value == that.value;
   }
 

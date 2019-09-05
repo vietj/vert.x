@@ -4,23 +4,23 @@ import io.vertx.core.spi.json.JsonMapper;
 
 import java.util.Objects;
 
-public class MyDoublePojo {
+public class DoublePojo {
 
-  public static class MyDoublePojoJsonMapper implements JsonMapper<MyDoublePojo, Number> {
+  public static class DoublePojoMapper implements JsonMapper<DoublePojo, Number> {
 
     @Override
-    public MyDoublePojo deserialize(Number value) throws IllegalArgumentException {
-      return new MyDoublePojo().setValue(value.doubleValue());
+    public DoublePojo deserialize(Number value) throws IllegalArgumentException {
+      return new DoublePojo().setValue(value.doubleValue());
     }
 
     @Override
-    public Double serialize(MyDoublePojo value) throws IllegalArgumentException {
+    public Double serialize(DoublePojo value) throws IllegalArgumentException {
       return value.getValue();
     }
 
     @Override
-    public Class<MyDoublePojo> getTargetClass() {
-      return MyDoublePojo.class;
+    public Class<DoublePojo> getTargetClass() {
+      return DoublePojo.class;
     }
   }
 
@@ -30,7 +30,7 @@ public class MyDoublePojo {
     return value;
   }
 
-  public MyDoublePojo setValue(double value) {
+  public DoublePojo setValue(double value) {
     this.value = value;
     return this;
   }
@@ -39,7 +39,7 @@ public class MyDoublePojo {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    MyDoublePojo that = (MyDoublePojo) o;
+    DoublePojo that = (DoublePojo) o;
     return value == that.value;
   }
 

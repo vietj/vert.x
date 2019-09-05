@@ -107,7 +107,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
     if (obj == null) {
       return null;
     } else {
-      return new JsonObject((Map<String, Object>) JsonCodec.INSTANCE.fromValue(obj, Map.class));
+      return JsonCodec.INSTANCE.toValue(obj, JsonObject.class);
     }
   }
 
@@ -121,7 +121,7 @@ public class JsonObject implements Iterable<Map.Entry<String, Object>>, ClusterS
    *          if the type cannot be instantiated.
    */
   public <T> T mapTo(Class<T> type) {
-    return JsonCodec.INSTANCE.fromValue(map, type);
+    return JsonCodec.INSTANCE.fromValue(this, type);
   }
 
   /**

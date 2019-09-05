@@ -5,23 +5,23 @@ import io.vertx.core.json.JsonObject;
 
 import java.util.Objects;
 
-public class MyJsonObjectPojo {
+public class JsonObjectPojo {
 
-  public static class MyJsonObjectPojoJsonMapper implements JsonMapper<MyJsonObjectPojo, JsonObject> {
+  public static class JsonObjectPojoMapper implements JsonMapper<JsonObjectPojo, JsonObject> {
 
     @Override
-    public MyJsonObjectPojo deserialize(JsonObject value) throws IllegalArgumentException {
-      return new MyJsonObjectPojo().setValue(value);
+    public JsonObjectPojo deserialize(JsonObject value) throws IllegalArgumentException {
+      return new JsonObjectPojo().setValue(value);
     }
 
     @Override
-    public JsonObject serialize(MyJsonObjectPojo value) throws IllegalArgumentException {
+    public JsonObject serialize(JsonObjectPojo value) throws IllegalArgumentException {
       return value.getValue();
     }
 
     @Override
-    public Class<MyJsonObjectPojo> getTargetClass() {
-      return MyJsonObjectPojo.class;
+    public Class<JsonObjectPojo> getTargetClass() {
+      return JsonObjectPojo.class;
     }
   }
 
@@ -31,7 +31,7 @@ public class MyJsonObjectPojo {
     return value;
   }
 
-  public MyJsonObjectPojo setValue(JsonObject value) {
+  public JsonObjectPojo setValue(JsonObject value) {
     this.value = value;
     return this;
   }
@@ -40,7 +40,7 @@ public class MyJsonObjectPojo {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    MyJsonObjectPojo that = (MyJsonObjectPojo) o;
+    JsonObjectPojo that = (JsonObjectPojo) o;
     return Objects.equals(value, that.value);
   }
 

@@ -11,11 +11,18 @@
 
 package io.vertx.core.json.impl;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.netty.buffer.ByteBufInputStream;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.DecodeException;
@@ -58,13 +65,47 @@ public class DatabindCodec extends JacksonCodec {
     module.addSerializer(byte[].class, new ByteArraySerializer());
     module.addDeserializer(byte[].class, new ByteArrayDeserializer());
 
+    JacksonCodec.mappers.values().forEach(m -> {
+      Class clazz = m.getTargetClass();
+      module.addSerializer(clazz, new StdSerializer(clazz) {
+        @Override
+        public void serialize(Object value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+          Object val = m.serialize(value);
+          encodeJson(val, gen);
+        }
+      });
+      module.addDeserializer(clazz, new StdDeserializer(clazz) {
+        @Override
+        public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+          Object o = parseAny(p, Object.class);
+          return m.deserialize(o);
+        }
+      });
+    });
+
     mapper.registerModule(module);
     prettyMapper.registerModule(module);
   }
 
   @Override
   public <T> T fromValue(Object json, Class<T> clazz) {
-    T value = DatabindCodec.mapper.convertValue(json, clazz);
+    if (clazz == JsonObject.class) {
+      Map<String, Object> value = (Map<String, Object>) DatabindCodec.mapper.convertValue(json, Map.class);
+      return clazz.cast(new JsonObject(value));
+    }
+    if (clazz == JsonArray.class) {
+      List<Object> value = (List<Object>) DatabindCodec.mapper.convertValue(json, List.class);
+      return clazz.cast(new JsonArray(value));
+    }
+    T value;
+    try {
+      value = DatabindCodec.mapper.convertValue(json, clazz);
+    } catch (Exception e) {
+      if (e instanceof DecodeException) {
+        throw e;
+      }
+      throw new DecodeException(e.getMessage(), e.getCause());
+    }
     if (clazz == Object.class) {
       value = (T) adapt(value);
     }
@@ -77,6 +118,16 @@ public class DatabindCodec extends JacksonCodec {
       value = (T) adapt(value);
     }
     return value;
+  }
+
+  @Override
+  public <T> T toValue(Object object, Class<T> toJsonType) {
+    if (toJsonType == JsonObject.class) {
+      return toJsonType.cast(new JsonObject(DatabindCodec.mapper.convertValue(object, Map.class)));
+    } else if (toJsonType == JsonArray.class) {
+      return toJsonType.cast(new JsonArray(DatabindCodec.mapper.convertValue(object, List.class)));
+    }
+    return DatabindCodec.mapper.convertValue(object, toJsonType);
   }
 
   @Override

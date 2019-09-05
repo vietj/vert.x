@@ -45,7 +45,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -57,23 +56,17 @@ import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 public class JacksonCodec implements JsonCodec {
 
   private static final JsonFactory factory = new JsonFactory();
+  static final Map<Class, JsonMapper> mappers;
 
   static {
     // Non-standard JSON but we allow C style comments in our JSON
     factory.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+
+    // Load user mappers
+    Collection<JsonMapper> m = ServiceHelper.loadFactories(JsonMapper.class);
+    mappers = m.stream().collect(Collectors.toMap(JsonSerializer::getTargetClass, Function.identity()));
   }
 
-  private final Map<Class, JsonMapper> mappers;
-
-  public JacksonCodec() {
-
-    Collection<JsonMapper> mappers = ServiceHelper.loadFactories(JsonMapper.class);
-
-
-    this.mappers = mappers.stream().collect(Collectors.toMap(JsonSerializer::getTargetClass, Function.identity()));
-
-
-  }
 
   @Override
   public <T> T fromString(String json, Class<T> clazz) throws DecodeException {
@@ -94,12 +87,34 @@ public class JacksonCodec implements JsonCodec {
   }
 
   @Override
-  public <T> T fromValue(Object json, Class<T> toValueType) {
-    throw new UnsupportedOperationException();
+  public <T> T fromValue(Object json, Class<T> clazz) {
+    JsonMapper mapper = mappers.get(clazz);
+    if (mapper == null) {
+      throw new DecodeException();
+    }
+    Object object = mapper.deserialize(json);
+    if (!clazz.isInstance(object)) {
+      throw new DecodeException();
+    }
+    return clazz.cast(object);
   }
 
   public <T> T fromValue(Object json, TypeReference<T> type) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public <T> T toValue(Object object, Class<T> toJsonType) {
+    Class<?> key = object.getClass();
+    JsonMapper mapper = mappers.get(key);
+    if (mapper == null) {
+      throw new EncodeException();
+    }
+    Object value = mapper.serialize(object);
+    if (!toJsonType.isInstance(value)) {
+      throw new EncodeException();
+    }
+    return toJsonType.cast(value);
   }
 
   @Override
@@ -123,6 +138,12 @@ public class JacksonCodec implements JsonCodec {
     ByteBufOutputStream out = new ByteBufOutputStream(buf);
     JsonGenerator generator = createGenerator(out, pretty);
     try {
+      if (object != null) {
+        JsonMapper mapper = mappers.get(object.getClass());
+        if (mapper != null) {
+          object = mapper.serialize(object);
+        }
+      }
       encodeJson(object, generator);
       generator.flush();
       return Buffer.buffer(buf);
@@ -184,13 +205,17 @@ public class JacksonCodec implements JsonCodec {
   public static <T> T fromParser(JsonParser parser, Class<T> type) throws DecodeException {
     try {
       parser.nextToken();
-      Object res = parseAny(parser);
-      return cast(res, type);
+      return parseAny(parser, type);
     } catch (IOException e) {
       throw new DecodeException(e.getMessage(), e);
     } finally {
       close(parser);
     }
+  }
+
+  static <T> T parseAny(JsonParser parser, Class<T> type) throws IOException, DecodeException {
+    Object res = parseAny(parser);
+    return cast(res, type);
   }
 
   private static Object parseAny(JsonParser parser) throws IOException, DecodeException {
@@ -273,7 +298,7 @@ public class JacksonCodec implements JsonCodec {
   }
 
   // In recursive calls, the callee is in charge of opening and closing the data structure
-  private static void encodeJson(Object json, JsonGenerator generator) throws EncodeException {
+  static void encodeJson(Object json, JsonGenerator generator) throws EncodeException {
     try {
       if (json instanceof JsonObject) {
         json = ((JsonObject)json).getMap();
@@ -312,9 +337,11 @@ public class JacksonCodec implements JsonCodec {
       } else if (json instanceof Boolean) {
         generator.writeBoolean((Boolean)json);
       } else if (json instanceof Instant) {
-        generator.writeString((ISO_INSTANT.format((Instant)json)));
+        // That should be handled by OOB mapper
+        generator.writeString(instantToString((Instant)json));
       } else if (json instanceof byte[]) {
-        generator.writeString(Base64.getEncoder().encodeToString((byte[]) json));
+        // That should be handled by OOB mapper
+        generator.writeString(byteArrayToString((byte[]) json));
       } else if (json == null) {
         generator.writeNull();
       } else {
@@ -339,6 +366,10 @@ public class JacksonCodec implements JsonCodec {
   private static <T> T cast(Object o, Class<T> clazz) {
     if (o instanceof Map) {
       if (!clazz.isAssignableFrom(Map.class)) {
+        JsonMapper mapper = mappers.get(clazz);
+        if (mapper != null) {
+          return clazz.cast(mapper.deserialize(new JsonObject((Map) o)));
+        }
         throw new DecodeException("Failed to decode");
       }
       if (clazz == Object.class) {
@@ -347,6 +378,10 @@ public class JacksonCodec implements JsonCodec {
       return clazz.cast(o);
     } else if (o instanceof List) {
       if (!clazz.isAssignableFrom(List.class)) {
+        JsonMapper mapper = mappers.get(clazz);
+        if (mapper != null) {
+          return clazz.cast(mapper.deserialize(new JsonArray((List) o)));
+        }
         throw new DecodeException("Failed to decode");
       }
       if (clazz == Object.class) {
@@ -360,6 +395,10 @@ public class JacksonCodec implements JsonCodec {
       return clazz.cast(o);
     } else if (o instanceof Boolean) {
       if (!clazz.isAssignableFrom(Boolean.class)) {
+        JsonMapper mapper = mappers.get(clazz);
+        if (mapper != null) {
+          return clazz.cast(mapper.deserialize(o));
+        }
         throw new DecodeException("Failed to decode");
       }
       return clazz.cast(o);
@@ -382,9 +421,33 @@ public class JacksonCodec implements JsonCodec {
       } else if (clazz == Object.class || clazz.isAssignableFrom(Number.class)) {
         // Nothing
       } else {
+        JsonMapper mapper = mappers.get(clazz);
+        if (mapper != null) {
+          try {
+            return clazz.cast(mapper.deserialize(o));
+          } catch (Exception e) {
+            throw new DecodeException(e.getMessage(), e);
+          }
+        }
         throw new DecodeException("Failed to decode");
       }
       return clazz.cast(o);
     }
+  }
+
+  public static Instant instantFromString(String s) {
+    return Instant.from(ISO_INSTANT.parse(s));
+  }
+
+  public static byte[] byteArrayFromString(String s) {
+    return Base64.getDecoder().decode(s);
+  }
+
+  public static String instantToString(Instant instant) {
+    return ISO_INSTANT.format(instant);
+  }
+
+  public static String byteArrayToString(byte[] bytes) {
+    return Base64.getEncoder().encodeToString(bytes);
   }
 }

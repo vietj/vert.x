@@ -16,21 +16,27 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.impl.DatabindCodec;
-import io.vertx.test.core.TestUtils;
 import io.vertx.test.core.VertxTestBase;
 import org.junit.Test;
 
 import java.time.Instant;
 import java.util.*;
 
-import static java.time.format.DateTimeFormatter.ISO_INSTANT;
-
 /**
  * @author <a href="http://tfox.org">Tim Fox</a>
  */
 public class JacksonDatabindTest extends VertxTestBase {
 
-  private DatabindCodec mapper = new DatabindCodec();
+  public static class Pojo {
+    @JsonProperty
+    public String value;
+    @JsonProperty
+    public Instant instant;
+    @JsonProperty
+    public byte[] bytes;
+  }
+
+  private DatabindCodec codec = new DatabindCodec();
 
   @Test
   public void testGetSetMapper() {
@@ -60,12 +66,12 @@ public class JacksonDatabindTest extends VertxTestBase {
     String json = Json.encode(Collections.singletonList(original));
     List<Pojo> correct;
 
-    correct = mapper.fromString(json, new TypeReference<List<Pojo>>() {});
+    correct = codec.fromString(json, new TypeReference<List<Pojo>>() {});
     assertTrue(((List)correct).get(0) instanceof Pojo);
     assertEquals(original.value, correct.get(0).value);
 
     // same must apply if instead of string we use a buffer
-    correct = mapper.fromBuffer(Buffer.buffer(json, "UTF8"), new TypeReference<List<Pojo>>() {});
+    correct = codec.fromBuffer(Buffer.buffer(json, "UTF8"), new TypeReference<List<Pojo>>() {});
     assertTrue(((List)correct).get(0) instanceof Pojo);
     assertEquals(original.value, correct.get(0).value);
 
@@ -73,44 +79,5 @@ public class JacksonDatabindTest extends VertxTestBase {
     assertFalse(incorrect.get(0) instanceof Pojo);
     assertTrue(incorrect.get(0) instanceof Map);
     assertEquals(original.value, ((Map)(incorrect.get(0))).get("value"));
-  }
-
-  @Test
-  public void testInstantDecoding() {
-    Pojo original = new Pojo();
-    original.instant = Instant.from(ISO_INSTANT.parse("2018-06-20T07:25:38.397Z"));
-    Pojo decoded = Json.decodeValue("{\"instant\":\"2018-06-20T07:25:38.397Z\"}", Pojo.class);
-    assertEquals(original.instant, decoded.instant);
-  }
-
-  @Test
-  public void testNullInstantDecoding() {
-    Pojo original = new Pojo();
-    Pojo decoded = Json.decodeValue("{\"instant\":null}", Pojo.class);
-    assertEquals(original.instant, decoded.instant);
-  }
-
-  @Test
-  public void testBytesDecoding() {
-    Pojo original = new Pojo();
-    original.bytes = TestUtils.randomByteArray(12);
-    Pojo decoded = Json.decodeValue("{\"bytes\":\"" + Base64.getEncoder().encodeToString(original.bytes) + "\"}", Pojo.class);
-    assertArrayEquals(original.bytes, decoded.bytes);
-  }
-
-  @Test
-  public void testNullBytesDecoding() {
-    Pojo original = new Pojo();
-    Pojo decoded = Json.decodeValue("{\"bytes\":null}", Pojo.class);
-    assertEquals(original.bytes, decoded.bytes);
-  }
-
-  private static class Pojo {
-    @JsonProperty
-    String value;
-    @JsonProperty
-    Instant instant;
-    @JsonProperty
-    byte[] bytes;
   }
 }
