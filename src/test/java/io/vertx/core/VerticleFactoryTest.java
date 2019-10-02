@@ -259,7 +259,7 @@ public class VerticleFactoryTest extends VertxTestBase {
       public void resolve(String identifier, DeploymentOptions deploymentOptions, ClassLoader classLoader, Promise<String> resolution) {
         vertx.runOnContext(v -> {
           // Async resolution
-          resolution.complete("whatever");
+          resolution.succeed("whatever");
         });
       }
       @Override
@@ -595,7 +595,7 @@ public class VerticleFactoryTest extends VertxTestBase {
         deploymentOptions.setConfig(new JsonObject().put("wibble", "quux"));
         deploymentOptions.setWorker(true);
         deploymentOptions.setIsolationGroup(isolationGroup);
-        resolution.complete(resolvedIdentifier);
+        resolution.succeed(resolvedIdentifier);
       }
     }
 

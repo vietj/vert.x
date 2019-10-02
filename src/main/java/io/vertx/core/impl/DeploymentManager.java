@@ -169,7 +169,7 @@ public class DeploymentManager {
           }
         }
       } else {
-        promise.complete(identifier);
+        promise.succeed(identifier);
       }
       promise.future().setHandler(ar -> {
         Throwable err;
@@ -189,7 +189,7 @@ public class DeploymentManager {
               vertx.<Verticle[]>executeBlocking(createFut -> {
                 try {
                   Verticle[] verticles = createVerticles(verticleFactory, identifier, options.getInstances(), cl);
-                  createFut.complete(verticles);
+                  createFut.succeed(verticles);
                 } catch (Exception e) {
                   createFut.fail(e);
                 }

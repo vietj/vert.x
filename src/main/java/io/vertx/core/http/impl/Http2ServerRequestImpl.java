@@ -247,7 +247,7 @@ public class Http2ServerRequestImpl extends Http2ServerStream implements HttpSer
       handler.handle(null);
     }
     if (body != null) {
-      bodyPromise.tryComplete(body);
+      bodyPromise.trySucceed(body);
     }
   }
 

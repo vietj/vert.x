@@ -92,6 +92,28 @@ public interface Promise<T> extends Handler<AsyncResult<T>> {
   void handle(AsyncResult<T> asyncResult);
 
   /**
+   * Complete the promise.
+   * <p/>
+   * If {@code result} is an instance of {@link Throwable} then the promise will be failed otherwise it will
+   * be succeeded.
+   * <p/>
+   * Any handler set on the associated promise will be called.
+   *
+   * @param result  the result
+   * @throws IllegalStateException when the promise is already completed
+   */
+  void complete(Object result);
+
+  /**
+   * Calls {@code complete(null)}
+   *
+   * @throws IllegalStateException when the promise is already completed
+   */
+  default void complete() {
+    complete(null);
+  }
+
+  /**
    * Set the result. Any handler will be called, if there is one, and the promise will be marked as completed.
    * <p/>
    * Any handler set on the associated promise will be called.
@@ -99,14 +121,16 @@ public interface Promise<T> extends Handler<AsyncResult<T>> {
    * @param result  the result
    * @throws IllegalStateException when the promise is already completed
    */
-  void complete(T result);
+  void succeed(T result);
 
   /**
    * Calls {@code complete(null)}
    *
    * @throws IllegalStateException when the promise is already completed
    */
-  void complete();
+  default void succeed() {
+    succeed(null);
+  }
 
   /**
    * Set the failure. Any handler will be called, if there is one, and the future will be marked as completed.
@@ -131,14 +155,40 @@ public interface Promise<T> extends Handler<AsyncResult<T>> {
    * @param result  the result
    * @return {@code false} when the future is already completed
    */
-  boolean tryComplete(T result);
+  default boolean tryComplete(Object result) {
+    if (result instanceof Throwable) {
+      return tryFail((Throwable) result);
+    } else {
+      return trySucceed((T) result);
+    }
+  }
 
   /**
    * Calls {@code tryComplete(null)}.
    *
    * @return {@code false} when the future is already completed
    */
-  boolean tryComplete();
+  default boolean tryComplete() {
+    return tryComplete(null);
+  }
+
+  /**
+   * Like {@link #trySucceed(Object)} but returns {@code false} when the promise is already completed instead of throwing
+   * an {@link IllegalStateException}, it returns {@code true} otherwise.
+   *
+   * @param result  the result
+   * @return {@code false} when the future is already completed
+   */
+  boolean trySucceed(T result);
+
+  /**
+   * Calls {@code trySucceed(null)}.
+   *
+   * @return {@code false} when the future is already completed
+   */
+  default boolean trySucceed() {
+    return trySucceed(null);
+  }
 
   /**
    * Like {@link #fail(Throwable)} but returns {@code false} when the promise is already completed instead of throwing

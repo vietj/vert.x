@@ -234,7 +234,7 @@ public class PipeTest extends AsyncTestBase {
     pipe.to(dst, ended::set);
     src.end();
     assertNull(ended.get());
-    completion.complete();
+    completion.succeed();
     assertTrue(ended.get().succeeded());
   }
 

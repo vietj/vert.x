@@ -30,7 +30,7 @@ public class ExecuteBlockingTest extends VertxTestBase {
         Thread.sleep(1000);
       } catch (Exception ignore) {
       }
-      future.complete("done!");
+      future.succeed("done!");
     }, onSuccess(res -> {
       assertEquals("done!", res);
       testComplete();
@@ -86,7 +86,7 @@ public class ExecuteBlockingTest extends VertxTestBase {
           assertTrue(Thread.currentThread().getName().startsWith("vert.x-eventloop-thread"));
           assertFalse(Context.isOnWorkerThread());
           assertTrue(Context.isOnEventLoopThread());
-          future.complete("done!");
+          future.succeed("done!");
         });
       }, onSuccess(res -> {
         assertSame(ctx, vertx.getOrCreateContext());
@@ -108,7 +108,7 @@ public class ExecuteBlockingTest extends VertxTestBase {
     CountDownLatch latch = new CountDownLatch(1);
     AtomicReference<ClassLoader> blockingTCCL = new AtomicReference<>();
     vertx.<String>executeBlocking(future -> {
-      future.complete("whatever");
+      future.succeed("whatever");
       blockingTCCL.set(Thread.currentThread().getContextClassLoader());
     }, ar -> {
       assertTrue(ar.succeeded());
@@ -142,7 +142,7 @@ public class ExecuteBlockingTest extends VertxTestBase {
             Thread.sleep(pause);
           } catch (Exception ignore) {
           }
-          future.complete("done!");
+          future.succeed("done!");
         }, false, onSuccess(res -> {
           assertSame(ctx, vertx.getOrCreateContext());
           assertTrue(Thread.currentThread().getName().startsWith("vert.x-eventloop-thread"));

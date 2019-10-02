@@ -26,7 +26,7 @@ public class SourceVerticle extends AbstractVerticle {
   public void start(Promise<Void> startPromise) throws Exception {
     vertx.deployVerticle("java:" + OtherSourceVerticle.class.getName().replace('.', '/') + ".java", new DeploymentOptions(), ar -> {
       if (ar.succeeded()) {
-        startPromise.complete((Void) null);
+        startPromise.succeed();
       } else {
         ar.cause().printStackTrace();
       }

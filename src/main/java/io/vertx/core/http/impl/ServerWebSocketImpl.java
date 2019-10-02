@@ -128,7 +128,7 @@ public class ServerWebSocketImpl extends WebSocketImplBase<ServerWebSocketImpl> 
         if (handshakePromise == null) {
           tryHandshake(101);
         } else {
-          handshakePromise.tryComplete(101);
+          handshakePromise.trySucceed(101);
         }
       }
     }

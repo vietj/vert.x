@@ -124,7 +124,7 @@ public class Http2ClientTest extends Http2TestBase {
     }).exceptionHandler(this::fail).connectionHandler(conn -> {
       vertx.runOnContext(v -> {
         conn.updateSettings(updatedSettings, ar -> {
-          end.complete();
+          end.succeed();
         });
       });
     }).end();
@@ -480,7 +480,7 @@ public class Http2ClientTest extends Http2TestBase {
           });
           vertx.cancelTimer(timerID);
           drain.set(true);
-          whenFull.complete();
+          whenFull.succeed();
         } else {
           Buffer chunk = Buffer.buffer(content);
           expected.appendBuffer(chunk);
@@ -661,7 +661,7 @@ public class Http2ClientTest extends Http2TestBase {
       client.post(DEFAULT_HTTPS_PORT, DEFAULT_HTTPS_HOST, "/somepath", onSuccess(resp -> {
         resp.exceptionHandler(resetHandler);
         resp.handler(buff -> {
-          doReset.complete();
+          doReset.succeed();
         });
       })).exceptionHandler(resetHandler).setChunked(true).write(chunk);
     });
@@ -674,7 +674,7 @@ public class Http2ClientTest extends Http2TestBase {
     Promise<Void> bufReceived = Promise.promise();
     server.requestHandler(req -> {
       req.handler(buf -> {
-        bufReceived.complete();
+        bufReceived.succeed();
       });
       AtomicBoolean errored = new AtomicBoolean();
       req.exceptionHandler(err -> {

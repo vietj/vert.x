@@ -1319,7 +1319,7 @@ public class FileSystemTest extends VertxTestBase {
         Vertx.currentContext().owner().setTimer(1, id -> {
           assert !flowing.getAndSet(true);
           stream.resume();
-          fut.complete();
+          fut.succeed();
         });
         return fut.future();
       }
@@ -1339,7 +1339,7 @@ public class FileSystemTest extends VertxTestBase {
         Vertx.currentContext().owner().setTimer(1, id -> {
           assert !fetching.getAndSet(true);
           stream.fetch(1);
-          fut.complete();
+          fut.succeed();
         });
         return fut.future();
       }
@@ -2065,7 +2065,7 @@ public class FileSystemTest extends VertxTestBase {
           assertEquals(expected.lastModifiedTime(), actual.lastModifiedTime());
           vertx.<Set<PosixFilePermission>>executeBlocking(fut -> {
             try {
-              fut.complete(Files.getPosixFilePermissions(new File(testDir, target).toPath(), LinkOption.NOFOLLOW_LINKS));
+              fut.succeed(Files.getPosixFilePermissions(new File(testDir, target).toPath(), LinkOption.NOFOLLOW_LINKS));
             } catch (IOException e) {
               fut.fail(e);
             }

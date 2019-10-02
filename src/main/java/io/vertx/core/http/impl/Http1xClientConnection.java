@@ -666,7 +666,7 @@ class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> impleme
       recycle();
     }
     if (next != null) {
-      next.promise.complete(next);
+      next.promise.succeed(next);
     }
   }
 

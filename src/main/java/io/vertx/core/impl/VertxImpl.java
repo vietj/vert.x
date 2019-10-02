@@ -200,7 +200,7 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
 
   private void createHaManager(VertxOptions options, Handler<AsyncResult<Vertx>> resultHandler) {
     this.<Map<String, String>>executeBlocking(fut -> {
-      fut.complete(clusterManager.getSyncMap(CLUSTER_MAP_NAME));
+      fut.succeed(clusterManager.getSyncMap(CLUSTER_MAP_NAME));
     }, false, ar -> {
       if (ar.succeeded()) {
         Map<String, String> clusterMap = ar.result();
@@ -230,7 +230,7 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
       // after the event bus has been fully started and updated its state
       // it will have also set the clustered changed view handler on the ha manager
       haManager.init();
-      fut.complete();
+      fut.succeed();
     }, false, ar -> {
       if (ar.succeeded()) {
         if (metrics != null) {
@@ -566,10 +566,10 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
         if (haManager != null) {
           this.executeBlocking(fut -> {
             haManager.stop();
-            fut.complete();
+            fut.succeed();
           }, false, haPromise);
         } else {
-          haPromise.complete();
+          haPromise.succeed();
         }
         haPromise.future().setHandler(ar2 -> {
           addressResolver.close(ar3 -> {
@@ -731,10 +731,10 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
     if (haManager != null && haManager.isEnabled()) {
       this.executeBlocking(fut -> {
         haManager.removeFromHA(deploymentID);
-        fut.complete();
+        fut.succeed();
       }, false, haFuture);
     } else {
-      haFuture.complete();
+      haFuture.succeed();
     }
     haFuture.future().compose(v -> {
       Promise<Void> deploymentFuture = Promise.promise();
@@ -859,7 +859,7 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
     executeBlockingInternal(fut -> {
       try {
         fileResolver.close();
-        fut.complete();
+        fut.succeed();
       } catch (IOException e) {
         fut.tryFail(e);
       }

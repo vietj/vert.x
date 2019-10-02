@@ -217,9 +217,9 @@ class HttpChannelConnector implements ConnectionProvider<HttpClientConnection> {
     });
     clientHandler.addHandler(conn -> {
       if (upgrade) {
-        future.complete(new ConnectResult<>(new Http2UpgradedClientConnection(client, conn), 1, http2Weight));
+        future.succeed(new ConnectResult<>(new Http2UpgradedClientConnection(client, conn), 1, http2Weight));
       } else {
-        future.complete(new ConnectResult<>(conn, http1MaxConcurrency, http1Weight));
+        future.succeed(new ConnectResult<>(conn, http1MaxConcurrency, http1Weight));
       }
     });
     clientHandler.removeHandler(conn -> {
@@ -234,7 +234,7 @@ class HttpChannelConnector implements ConnectionProvider<HttpClientConnection> {
                               Promise<ConnectResult<HttpClientConnection>> future) {
     try {
       VertxHttp2ConnectionHandler<Http2ClientConnection> clientHandler = Http2ClientConnection.createHttp2ConnectionHandler(client, endpointMetric, listener, context, null, (conn, concurrency) -> {
-        future.complete(new ConnectResult<>(conn, concurrency, http2Weight));
+        future.succeed(new ConnectResult<>(conn, concurrency, http2Weight));
       });
       ch.pipeline().addLast("handler", clientHandler);
       ch.flush();

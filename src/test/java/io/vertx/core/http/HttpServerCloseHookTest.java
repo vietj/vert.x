@@ -43,7 +43,7 @@ public class HttpServerCloseHookTest extends VertxTestBase {
         req.response().end("Hello World!");
       }).listen(8443, ar -> {
         if (ar.succeeded()) {
-          startPromise.complete();
+          startPromise.succeed();
         } else {
           startPromise.fail(ar.cause());
         }

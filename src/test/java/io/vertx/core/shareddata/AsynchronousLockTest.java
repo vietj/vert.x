@@ -130,7 +130,7 @@ public class AsynchronousLockTest extends VertxTestBase {
         awaitLatch(acquireLatch);
         AsyncResult<Lock> ar = lockReference.get();
         if (ar.succeeded()) {
-          future.complete(ar.result());
+          future.succeed(ar.result());
         } else {
           future.fail(ar.cause());
         }
@@ -154,7 +154,7 @@ public class AsynchronousLockTest extends VertxTestBase {
             awaitLatch(acquireLatch);
             AsyncResult<Lock> ar3 = lockReference.get();
             if (ar3.succeeded()) {
-              future.complete(ar3.result());
+              future.succeed(ar3.result());
             } else {
               future.fail(ar3.cause());
             }

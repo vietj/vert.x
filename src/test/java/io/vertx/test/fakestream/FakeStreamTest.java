@@ -147,7 +147,7 @@ public class FakeStreamTest extends AsyncTestBase {
     stream.end(endRes::set);
     assertEquals(0, ended.get());
     assertNull(endRes.get());
-    end.complete();
+    end.succeed();
     assertEquals(1, ended.get());
     assertTrue(endRes.get().succeeded());
   }
@@ -164,7 +164,7 @@ public class FakeStreamTest extends AsyncTestBase {
     stream.end(endRes::set);
     assertEquals(0, ended.get());
     assertNull(endRes.get());
-    end.complete();
+    end.succeed();
     assertEquals(0, ended.get());
     assertNull(endRes.get());
     stream.fetch(1);

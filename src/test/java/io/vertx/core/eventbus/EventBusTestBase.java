@@ -373,7 +373,7 @@ public abstract class EventBusTestBase extends VertxTestBase {
           Thread.interrupted();
           fut.fail(e);
         }
-        fut.complete();
+        fut.succeed();
       }, ar2 -> {
         if (ar2.succeeded()) {
           testComplete();
@@ -451,7 +451,7 @@ public abstract class EventBusTestBase extends VertxTestBase {
         assertTrue("Not an EL thread", Context.isOnEventLoopThread());
         complete();
       });
-      fut.complete();
+      fut.succeed();
     }, false, null);
 
     await();

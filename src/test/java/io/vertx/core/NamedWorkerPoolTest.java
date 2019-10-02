@@ -57,7 +57,7 @@ public class NamedWorkerPoolTest extends VertxTestBase {
         vertx.executeBlocking(fut -> {
           try {
             SECONDS.sleep(5);
-            fut.complete();
+            fut.succeed();
           } catch (InterruptedException e) {
             fut.fail(e);
           }
@@ -83,7 +83,7 @@ public class NamedWorkerPoolTest extends VertxTestBase {
       onWorkerThread.set(Context.isOnWorkerThread());
       onEventLoopThread.set(Context.isOnEventLoopThread());
       threadName.set(Thread.currentThread().getName());
-      fut.complete(null);
+      fut.succeed(null);
     }, ar -> {
       testComplete();
     });
@@ -122,7 +122,7 @@ public class NamedWorkerPoolTest extends VertxTestBase {
             assertEquals(t.get(), Thread.currentThread());
           }
           assertTrue(Thread.currentThread().getName().startsWith(poolName + "-"));
-          fut.complete(null);
+          fut.succeed();
         }, ar -> {
           if (last) {
             testComplete();
@@ -154,7 +154,7 @@ public class NamedWorkerPoolTest extends VertxTestBase {
             return;
           }
           assertTrue(Thread.currentThread().getName().startsWith(poolName + "-"));
-          fut.complete(null);
+          fut.succeed();
         }, false, ar -> {
           complete();
         });
@@ -185,7 +185,7 @@ public class NamedWorkerPoolTest extends VertxTestBase {
             } else {
               assertSame(current, currentThread.get());
             }
-            fut.complete();
+            fut.succeed();
           }, true, onSuccess(v -> complete()));
         }
       }
@@ -225,7 +225,7 @@ public class NamedWorkerPoolTest extends VertxTestBase {
       VertxThread thread = (VertxThread) t;
       assertEquals(maxExecuteTime, thread.maxExecTime());
       assertEquals(maxExecuteTimeUnit, thread.maxExecTimeUnit());
-      f.complete();
+      f.succeed();
     }, res -> {
       testComplete();
     });
@@ -285,7 +285,7 @@ public class NamedWorkerPoolTest extends VertxTestBase {
           assertTrue(Context.isOnWorkerThread());
           assertFalse(Context.isOnEventLoopThread());
           assertTrue(Thread.currentThread().getName().startsWith(poolName + "-"));
-          fut.complete();
+          fut.succeed();
         }, onSuccess(v -> {
           vertx.undeploy(context.deploymentID());
         }));

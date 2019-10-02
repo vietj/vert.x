@@ -295,7 +295,7 @@ public class HttpClientResponseImpl implements HttpClientResponse  {
     }
 
     void handleEnd(Void v) {
-      promise.tryComplete(body);
+      promise.trySucceed(body);
     }
 
     void handleException(Throwable err) {

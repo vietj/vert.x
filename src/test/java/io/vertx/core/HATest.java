@@ -418,7 +418,7 @@ public class HATest extends VertxTestBase {
     v.executeBlocking(fut -> {
       try {
         v.simulateKill();
-        fut.complete();
+        fut.succeed();
       } catch (Exception e) {
         fut.fail(e);
       }

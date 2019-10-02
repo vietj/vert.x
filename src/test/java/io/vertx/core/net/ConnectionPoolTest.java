@@ -913,7 +913,7 @@ public class ConnectionPoolTest extends VertxTestBase {
       context.nettyEventLoop().execute(() -> {
         synchronized (FakeConnection.this) {
           status = CONNECTED;
-          future.complete(new ConnectResult<>(this, concurrency, 1));
+          future.succeed(new ConnectResult<>(this, concurrency, 1));
         }
       });
       return this;

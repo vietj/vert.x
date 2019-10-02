@@ -138,7 +138,7 @@ public interface ServerWebSocket extends WebSocketBase {
    *
    * The provided future might be completed by the WebSocket itself, e.g calling the {@link #close()} method
    * will try to accept the handshake and close the WebSocket afterward. Thus it is advised to try to complete
-   * the {@code future} with {@link Promise#tryComplete} or {@link Promise#tryFail}.
+   * the {@code future} with {@link Promise#trySucceed} or {@link Promise#tryFail}.
    * <p>
    * This method should be called from the WebSocket handler to explicitly set an asynchronous handshake.
    * <p>

@@ -48,12 +48,12 @@ class SucceededFuture<T> implements Future<T>, Promise<T> {
   }
 
   @Override
-  public void complete(T result) {
+  public void succeed(T result) {
     throw new IllegalStateException("Result is already complete: succeeded");
   }
 
   @Override
-  public void complete() {
+  public void complete(Object result) {
     throw new IllegalStateException("Result is already complete: succeeded");
   }
 
@@ -68,12 +68,7 @@ class SucceededFuture<T> implements Future<T>, Promise<T> {
   }
 
   @Override
-  public boolean tryComplete(T result) {
-    return false;
-  }
-
-  @Override
-  public boolean tryComplete() {
+  public boolean trySucceed(T result) {
     return false;
   }
 

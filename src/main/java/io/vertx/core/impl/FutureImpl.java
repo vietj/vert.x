@@ -88,15 +88,15 @@ class FutureImpl<T> implements Promise<T>, Future<T> {
   }
 
   @Override
-  public void complete(T result) {
+  public void complete(Object result) {
     if (!tryComplete(result)) {
       throw new IllegalStateException("Result is already complete: " + (succeeded ? "succeeded" : "failed"));
     }
   }
 
   @Override
-  public void complete() {
-    if (!tryComplete()) {
+  public void succeed(T result) {
+    if (!trySucceed(result)) {
       throw new IllegalStateException("Result is already complete: " + (succeeded ? "succeeded" : "failed"));
     }
   }
@@ -114,9 +114,8 @@ class FutureImpl<T> implements Promise<T>, Future<T> {
       throw new IllegalStateException("Result is already complete: " + (succeeded ? "succeeded" : "failed"));
     }
   }
-
   @Override
-  public boolean tryComplete(T result) {
+  public boolean trySucceed(T result) {
     Handler<AsyncResult<T>> h;
     synchronized (this) {
       if (succeeded || failed) {
@@ -133,14 +132,9 @@ class FutureImpl<T> implements Promise<T>, Future<T> {
     return true;
   }
 
-  @Override
-  public boolean tryComplete() {
-    return tryComplete(null);
-  }
-
   public void handle(Future<T> ar) {
     if (ar.succeeded()) {
-      complete(ar.result());
+      succeed(ar.result());
     } else {
       fail(ar.cause());
     }
@@ -149,7 +143,7 @@ class FutureImpl<T> implements Promise<T>, Future<T> {
   @Override
   public void handle(AsyncResult<T> asyncResult) {
     if (asyncResult.succeeded()) {
-      complete(asyncResult.result());
+      succeed(asyncResult.result());
     } else {
       fail(asyncResult.cause());
     }

@@ -32,7 +32,7 @@ public class PipeImpl<T> implements Pipe<T> {
     this.result = Promise.promise();
 
     // Set handlers now
-    src.endHandler(result::tryComplete);
+    src.endHandler(result::trySucceed);
     src.exceptionHandler(result::tryFail);
   }
 

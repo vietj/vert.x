@@ -274,7 +274,7 @@ public class Http2ServerConnection extends Http2ConnectionBase implements HttpSe
 
     void complete() {
       registerMetrics();
-      completionHandler.complete(response);
+      completionHandler.succeed(response);
     }
   }
 }

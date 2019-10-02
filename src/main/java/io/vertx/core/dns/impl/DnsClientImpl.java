@@ -281,7 +281,7 @@ public final class DnsClientImpl implements DnsClient {
           Collections.sort((List) records);
         }
         actualCtx.executeFromIO(v -> {
-          promise.tryComplete(records);
+          promise.trySucceed(records);
         });
       } else {
         actualCtx.executeFromIO(new DnsException(code), this::fail);

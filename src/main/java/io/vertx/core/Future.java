@@ -211,7 +211,7 @@ public interface Future<T> extends AsyncResult<T> {
           ret.fail(e);
           return;
         }
-        ret.complete(mapped);
+        ret.succeed(mapped);
       } else {
         ret.fail(ar.cause());
       }
@@ -233,7 +233,7 @@ public interface Future<T> extends AsyncResult<T> {
     Promise<V> ret = Promise.promise();
     setHandler(ar -> {
       if (ar.succeeded()) {
-        ret.complete(value);
+        ret.succeed(value);
       } else {
         ret.fail(ar.cause());
       }
@@ -271,7 +271,7 @@ public interface Future<T> extends AsyncResult<T> {
     Promise<T> ret = Promise.promise();
     setHandler(ar -> {
       if (ar.succeeded()) {
-        ret.complete(result());
+        ret.succeed(result());
       } else {
         Future<T> mapped;
         try {
@@ -307,7 +307,7 @@ public interface Future<T> extends AsyncResult<T> {
     Promise<T> ret = Promise.promise();
     setHandler(ar -> {
       if (ar.succeeded()) {
-        ret.complete(result());
+        ret.succeed(result());
       } else {
         T value;
         try {
@@ -316,7 +316,7 @@ public interface Future<T> extends AsyncResult<T> {
           ret.fail(e);
           return;
         }
-        ret.complete(value);
+        ret.succeed(value);
       }
     });
     return ret.future();
@@ -336,9 +336,9 @@ public interface Future<T> extends AsyncResult<T> {
     Promise<T> ret = Promise.promise();
     setHandler(ar -> {
       if (ar.succeeded()) {
-        ret.complete(result());
+        ret.succeed(result());
       } else {
-        ret.complete(value);
+        ret.succeed(value);
       }
     });
     return ret.future();

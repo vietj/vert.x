@@ -108,7 +108,7 @@ public interface Context {
    * (e.g. on the original event loop of the caller).
    * <p>
    * A {@code Future} instance is passed into {@code blockingCodeHandler}. When the blocking code successfully completes,
-   * the handler should call the {@link Promise#complete} or {@link Promise#complete(Object)} method, or the {@link Promise#fail}
+   * the handler should call the {@link Promise#succeed} or {@link Promise#succeed(Object)} method, or the {@link Promise#fail}
    * method if it failed.
    * <p>
    * The blocking code should block for a reasonable amount of time (i.e no more than a few seconds). Long blocking operations

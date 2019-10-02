@@ -71,7 +71,7 @@ class FileStreamChannel extends AbstractChannel {
               ChannelFuture fut = ctx.writeAndFlush(new ChunkedFile((RandomAccessFile) evt, offset, length, 8192 /* default chunk size */ ));
               fut.addListener(f -> {
                 if (f.isSuccess()) {
-                  result.tryComplete(bytesWritten);
+                  result.trySucceed(bytesWritten);
                 } else {
                   result.tryFail(f.cause());
                 }

@@ -49,7 +49,7 @@ public class FutureTest extends VertxTestBase {
     f2 = Future.future(f1 -> {
       count.incrementAndGet();
       ref.set(f1);
-      f1.complete("the-value");
+      f1.succeed("the-value");
     });
     assertSame(f2, ref.get().future());
     assertEquals(1, count.get());
@@ -100,17 +100,17 @@ public class FutureTest extends VertxTestBase {
     promises.add(Promise.failedPromise(new Exception()));
     for (Promise<Object> promise : promises) {
       try {
-        promise.complete(new Object());
+        promise.succeed(new Object());
         fail();
       } catch (IllegalStateException ignore) {
       }
-      assertFalse(promise.tryComplete(new Object()));
+      assertFalse(promise.trySucceed(new Object()));
       try {
-        promise.complete(null);
+        promise.succeed(null);
         fail();
       } catch (IllegalStateException ignore) {
       }
-      assertFalse(promise.tryComplete(null));
+      assertFalse(promise.trySucceed(null));
       try {
         promise.fail(new Exception());
         fail();
@@ -132,7 +132,7 @@ public class FutureTest extends VertxTestBase {
       called.set(true);
     });
     assertFalse(called.get());
-    promise.complete(null);
+    promise.succeed(null);
     assertTrue(called.get());
     called.set(false);
     Object foo = new Object();
@@ -145,7 +145,7 @@ public class FutureTest extends VertxTestBase {
       assertEquals(null, result.cause());
     });
     assertFalse(called.get());
-    promise.complete(foo);
+    promise.succeed(foo);
     assertTrue(called.get());
     called.set(false);
     Exception cause = new Exception();
@@ -259,11 +259,11 @@ public class FutureTest extends VertxTestBase {
     checker.assertNotCompleted();
     assertEquals(null, composite.<String>resultAt(0));
     assertEquals(null, composite.<Integer>resultAt(1));
-    p1.complete("something");
+    p1.succeed("something");
     checker.assertNotCompleted();
     assertEquals("something", composite.resultAt(0));
     assertEquals(null, composite.<Integer>resultAt(1));
-    p2.complete(3);
+    p2.succeed(3);
     checker.assertSucceeded(composite);
     assertEquals("something", composite.resultAt(0));
     assertEquals(3, (int)composite.resultAt(1));
@@ -292,7 +292,7 @@ public class FutureTest extends VertxTestBase {
     Future<Integer> f2 = p2.future();
     CompositeFuture composite = all.apply(f1, f2);
     Checker<CompositeFuture> checker = new Checker<>(composite);
-    p1.complete("s");
+    p1.succeed("s");
     Exception cause = new Exception();
     p2.fail(cause);
     checker.assertFailed(cause);
@@ -355,9 +355,9 @@ public class FutureTest extends VertxTestBase {
     checker.assertNotCompleted();
     assertEquals(null, composite.<String>resultAt(0));
     assertEquals(null, composite.<Integer>resultAt(1));
-    p1.complete("something");
+    p1.succeed("something");
     checker.assertSucceeded(composite);
-    p2.complete(3);
+    p2.succeed(3);
     checker.assertSucceeded(composite);
   }
 
@@ -386,7 +386,7 @@ public class FutureTest extends VertxTestBase {
     Checker<CompositeFuture> checker = new Checker<>(composite);
     p1.fail("failure");
     checker.assertNotCompleted();
-    p2.complete(3);
+    p2.succeed(3);
     checker.assertSucceeded(composite);
   }
 
@@ -466,9 +466,9 @@ public class FutureTest extends VertxTestBase {
     CompositeFuture composite = join.apply(f1, f2);
     Checker<CompositeFuture> checker = new Checker<>(composite);
     checker.assertNotCompleted();
-    p1.complete("foo");
+    p1.succeed("foo");
     checker.assertNotCompleted();
-    p2.complete();
+    p2.succeed();
     checker.assertSucceeded(composite);
   }
 
@@ -490,7 +490,7 @@ public class FutureTest extends VertxTestBase {
     CompositeFuture composite = join.apply(f1, f2);
     Checker<CompositeFuture> checker = new Checker<>(composite);
     checker.assertNotCompleted();
-    p1.complete("foo");
+    p1.succeed("foo");
     checker.assertNotCompleted();
     Throwable cause = new Throwable();
     p2.fail(cause);
@@ -518,7 +518,7 @@ public class FutureTest extends VertxTestBase {
     Throwable cause = new Throwable();
     p1.fail(cause);
     checker.assertNotCompleted();
-    p2.complete(10);
+    p2.succeed(10);
     assertSame(cause, checker.assertFailed());
   }
 
@@ -562,9 +562,9 @@ public class FutureTest extends VertxTestBase {
     Future<Integer> f2 = p2.future();
     CompositeFuture composite = CompositeFuture.all(f1, f2);
     assertEquals(Arrays.asList(null, null), composite.list());
-    p1.complete("foo");
+    p1.succeed("foo");
     assertEquals(Arrays.asList("foo", null), composite.list());
-    p2.complete(4);
+    p2.succeed(4);
     assertEquals(Arrays.asList("foo", 4), composite.list());
   }
 
@@ -580,10 +580,10 @@ public class FutureTest extends VertxTestBase {
       return c;
     });
     Checker<Integer>  checker = new Checker<>(f4);
-    p3.complete("abcdef");
+    p3.succeed("abcdef");
     checker.assertNotCompleted();
     assertEquals("abcdef", ref.get());
-    p.complete(6);
+    p.succeed(6);
     checker.assertSucceeded(6);
   }
 
@@ -600,7 +600,7 @@ public class FutureTest extends VertxTestBase {
       return c;
     });
     Checker<Integer> checker = new Checker<>(f4);
-    p3.complete("abcdef");
+    p3.succeed("abcdef");
     p.fail(cause);
     checker.assertFailed(cause);
   }
@@ -618,13 +618,54 @@ public class FutureTest extends VertxTestBase {
   }
 
   @Test
+  public void testComposeFailureToSuccess() {
+    Exception cause = new Exception();
+    AtomicReference<Throwable> ref = new AtomicReference<>();
+    Promise<Integer> p = Promise.promise();
+    Future<Integer> c = p.future();
+    Promise<String> p3 = Promise.promise();
+    Future<String> f3 = p3.future();
+    Future<Integer> f4 = f3.compose(success -> {
+      throw new AssertionError();
+    }, err -> {
+      ref.set(err);
+      return c;
+    });
+    Checker<Integer>  checker = new Checker<>(f4);
+    p3.fail(cause);
+    checker.assertNotCompleted();
+    assertEquals(cause, ref.get());
+    p.succeed(6);
+    checker.assertSucceeded(6);
+  }
+
+  @Test
+  public void testComposeFailureToFailure() {
+    Throwable cause = new Throwable();
+    AtomicReference<Throwable> ref = new AtomicReference<>();
+    Promise<Integer> p = Promise.promise();
+    Future<Integer> c = p.future();
+    Promise<String> p3 = Promise.promise();
+    Future<String> f3 = p3.future();
+    Future<Integer> f4 = f3.compose(success -> {
+      throw new AssertionError();
+    }, err -> {
+      ref.set(err);
+      return c;
+    });
+    Checker<Integer> checker = new Checker<>(f4);
+    p3.fail(new Throwable());
+    p.fail(cause);
+    checker.assertFailed(cause);
+  }
+  @Test
   public void testComposeFails() {
     RuntimeException cause = new RuntimeException();
     Promise<String> p3 = Promise.promise();
     Future<String> f3 = p3.future();
     Future<Integer> f4 = f3.compose(string -> { throw cause; });
     Checker<Integer> checker = new Checker<>(f4);
-    p3.complete("foo");
+    p3.succeed("foo");
     checker.assertFailed(cause);
   }
 
@@ -646,7 +687,7 @@ public class FutureTest extends VertxTestBase {
     Future<String> mapped = f.map(Object::toString);
     Checker<String> checker = new Checker<>(mapped);
     checker.assertNotCompleted();
-    p.complete(3);
+    p.succeed(3);
     checker.assertSucceeded("3");
   }
 
@@ -698,7 +739,7 @@ public class FutureTest extends VertxTestBase {
     Future<String> mapped = f.mapEmpty();
     Checker<String> checker = new Checker<>(mapped);
     checker.assertNotCompleted();
-    p.complete(3);
+    p.succeed(3);
     checker.assertSucceeded(null);
   }
 
@@ -713,7 +754,7 @@ public class FutureTest extends VertxTestBase {
     });
     Checker<String> checker = new Checker<>(r);
     checker.assertNotCompleted();
-    p.complete("yeah");
+    p.succeed("yeah");
     assertTrue(r.succeeded());
     checker.assertSucceeded("yeah");
     assertFalse(called.get());
@@ -778,7 +819,7 @@ public class FutureTest extends VertxTestBase {
     });
     Checker<String> checker = new Checker<>(r);
     checker.assertNotCompleted();
-    p.complete("yeah");
+    p.succeed("yeah");
     assertTrue(r.succeeded());
     checker.assertSucceeded("yeah");
     assertFalse(called.get());
@@ -840,13 +881,13 @@ public class FutureTest extends VertxTestBase {
       public Future<T> setHandler(Handler<AsyncResult<T>> handler) { throw new UnsupportedOperationException(); }
       public Handler<AsyncResult<T>> getHandler() { throw new UnsupportedOperationException(); }
 
-      public void complete(T result) {
-        if (!tryComplete(result)) {
+      public void succeed(T result) {
+        if (!trySucceed(result)) {
           throw new IllegalStateException();
         }
       }
-      public void complete() {
-        if (!tryComplete()) {
+      public void succeed() {
+        if (!trySucceed()) {
           throw new IllegalStateException();
         }
       }
@@ -860,7 +901,7 @@ public class FutureTest extends VertxTestBase {
           throw new IllegalStateException();
         }
       }
-      public boolean tryComplete(T result) {
+      public boolean trySucceed(T result) {
         if (succeeded || failed) {
           return false;
         }
@@ -868,7 +909,7 @@ public class FutureTest extends VertxTestBase {
         this.result = result;
         return true;
       }
-      public boolean tryComplete() { throw new UnsupportedOperationException(); }
+      public boolean trySucceed() { throw new UnsupportedOperationException(); }
       public boolean tryFail(Throwable cause) {
         if (succeeded || failed) {
           return false;
@@ -884,7 +925,7 @@ public class FutureTest extends VertxTestBase {
       public boolean failed() { throw new UnsupportedOperationException(); }
       public void handle(AsyncResult<T> asyncResult) {
         if (asyncResult.succeeded()) {
-          complete(asyncResult.result());
+          succeed(asyncResult.result());
         } else {
           fail(asyncResult.cause());
         }
@@ -980,7 +1021,7 @@ public class FutureTest extends VertxTestBase {
     AsyncResult<String> res = asyncResult(f);
     AsyncResult<Integer> map1 = res.map(String::length);
     AsyncResult<Integer> map2 = res.map(17);
-    p.complete("foobar");
+    p.succeed("foobar");
     assertEquals(6, (int)map1.result());
     assertNull(map1.cause());
     assertEquals(17, (int)map2.result());
@@ -1008,7 +1049,7 @@ public class FutureTest extends VertxTestBase {
     Future<String> f = p.future();
     AsyncResult<String> res = asyncResult(f);
     AsyncResult<Integer> map = res.mapEmpty();
-    p.complete("foobar");
+    p.succeed("foobar");
     assertNull(null, map.result());
     assertNull(map.cause());
   }
@@ -1018,7 +1059,7 @@ public class FutureTest extends VertxTestBase {
     Promise<String> p = Promise.promise();
     Future<String> f = p.future();
     Future<String> r = f.recover(t -> Future.succeededFuture(t.getMessage()));
-    p.complete("yeah");
+    p.succeed("yeah");
     assertTrue(r.succeeded());
     assertEquals(r.result(), "yeah");
   }
@@ -1108,7 +1149,7 @@ public class FutureTest extends VertxTestBase {
 
   private void testSucceededOtherwise(AsyncResult<String> res, Promise<String> p) {
     AsyncResult<String> ar = res.otherwise(Throwable::getMessage);
-    p.complete("foobar");
+    p.succeed("foobar");
     assertTrue(ar.succeeded());
     assertFalse(ar.failed());
     assertEquals("foobar", ar.result());
@@ -1132,7 +1173,7 @@ public class FutureTest extends VertxTestBase {
 
   private void testSucceededOtherwiseApplyFunction(AsyncResult<String> res, Promise<String> p) {
     AsyncResult<String> ar = res.otherwise("whatever");
-    p.complete("foobar");
+    p.succeed("foobar");
     assertTrue(ar.succeeded());
     assertFalse(ar.failed());
     assertEquals("foobar", ar.result());
@@ -1228,7 +1269,7 @@ public class FutureTest extends VertxTestBase {
 
     Promise<String> p = Promise.promise();
     Future<String> f = p.future();
-    p.complete("abc");
+    p.succeed("abc");
     assertEquals("Future{result=abc}", f.toString());
 
     p = Promise.promise();
@@ -1244,7 +1285,7 @@ public class FutureTest extends VertxTestBase {
     Field handlerField = f.getClass().getDeclaredField("handler");
     handlerField.setAccessible(true);
     f.setHandler(ar -> {});
-    promise.complete();
+    promise.succeed();
     assertNull(handlerField.get(f));
     f.setHandler(ar -> {});
     assertNull(handlerField.get(f));

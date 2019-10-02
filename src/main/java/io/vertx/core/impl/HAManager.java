@@ -270,7 +270,7 @@ public class HAManager {
           // Tell the other nodes of the cluster about the verticle for HA purposes
           String deploymentID = ar1.result();
           addToHA(deploymentID, verticleName, deploymentOptions);
-          fut.complete(deploymentID);
+          fut.succeed(deploymentID);
         } else {
           fut.fail(ar1.cause());
         }
@@ -352,7 +352,7 @@ public class HAManager {
               checkQuorumWhenAdded(nodeID, start);
             });
           }
-          fut.complete();
+          fut.succeed();
         }, null);
       });
     }

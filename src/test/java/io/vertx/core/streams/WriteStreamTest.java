@@ -61,11 +61,11 @@ public class WriteStreamTest extends AsyncTestBase {
     assertEquals(1, src.writeCount.get());
     assertEquals(0, src.endCount.get());
     assertFalse(resolvedFut.isComplete());
-    src.writeFut.complete();
+    src.writeFut.succeed();
     assertEquals(1, src.writeCount.get());
     assertEquals(1, src.endCount.get());
     assertFalse(resolvedFut.isComplete());
-    src.endFut.complete();
+    src.endFut.succeed();
     assertEquals(1, src.writeCount.get());
     assertEquals(1, src.endCount.get());
     assertTrue(resolvedFut.succeeded());
@@ -81,7 +81,7 @@ public class WriteStreamTest extends AsyncTestBase {
 
     src = new EndWithItemStreamAsync();
     resolvedFut = src.end(item);
-    src.writeFut.complete();
+    src.writeFut.succeed();
     src.endFut.fail(cause);
     assertEquals(1, src.writeCount.get());
     assertEquals(1, src.endCount.get());

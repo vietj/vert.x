@@ -104,7 +104,7 @@ public abstract class AbstractVerticle implements Verticle {
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
     start();
-    startPromise.complete();
+    startPromise.succeed();
   }
 
   /**
@@ -118,7 +118,7 @@ public abstract class AbstractVerticle implements Verticle {
   @Override
   public void stop(Promise<Void> stopPromise) throws Exception {
     stop();
-    stopPromise.complete();
+    stopPromise.succeed();
   }
 
   /**

@@ -1223,7 +1223,7 @@ public class FileSystemImpl implements FileSystem {
     public void handle(Promise<T> fut) {
       try {
         T result = perform();
-        fut.complete(result);
+        fut.succeed(result);
       } catch (Exception e) {
         fut.fail(e);
       }

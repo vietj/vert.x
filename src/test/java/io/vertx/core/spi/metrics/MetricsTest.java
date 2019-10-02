@@ -935,7 +935,7 @@ public class MetricsTest extends VertxTestBase {
         if (metrics.numberOfWaitingTasks() > 0) {
           hadWaitingQueue.set(true);
         }
-        fut.complete();
+        fut.succeed();
       }, ar -> {
         if (metrics.numberOfIdleThreads() > 0) {
           hadIdle.set(true);
@@ -1004,7 +1004,7 @@ public class MetricsTest extends VertxTestBase {
             }
           }
         );
-        startPromise.complete();
+        startPromise.succeed();
       }
     };
 
@@ -1115,7 +1115,7 @@ public class MetricsTest extends VertxTestBase {
       } catch (InterruptedException e) {
         Thread.currentThread().isInterrupted();
       }
-      future.complete(null);
+      future.succeed();
     };
   }
 

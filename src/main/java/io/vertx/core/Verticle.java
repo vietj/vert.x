@@ -52,7 +52,7 @@ public interface Verticle {
    * Vert.x calls this method when deploying the instance. You do not call it yourself.
    * <p>
    * A promise is passed into the method, and when deployment is complete the verticle should either call
-   * {@link io.vertx.core.Promise#complete} or {@link io.vertx.core.Promise#fail} the future.
+   * {@link io.vertx.core.Promise#succeed} or {@link io.vertx.core.Promise#fail} the future.
    *
    * @param startPromise  the future
    */
@@ -64,7 +64,7 @@ public interface Verticle {
    * Vert.x calls this method when un-deploying the instance. You do not call it yourself.
    * <p>
    * A promise is passed into the method, and when un-deployment is complete the verticle should either call
-   * {@link io.vertx.core.Promise#complete} or {@link io.vertx.core.Promise#fail} the future.
+   * {@link io.vertx.core.Promise#succeed} or {@link io.vertx.core.Promise#fail} the future.
    *
    * @param stopPromise  the future
    */

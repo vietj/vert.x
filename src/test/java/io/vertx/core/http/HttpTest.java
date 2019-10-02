@@ -2089,7 +2089,7 @@ public abstract class HttpTest extends HttpTestBase {
           });
 
           // Tell the server to resume
-          resumeFuture.complete();
+          resumeFuture.succeed();
         }
       });
     });
@@ -2121,7 +2121,7 @@ public abstract class HttpTest extends HttpTestBase {
           });
 
           // Tell the server to resume
-          resumeFuture.complete();
+          resumeFuture.succeed();
         }
       });
     });
@@ -2181,7 +2181,7 @@ public abstract class HttpTest extends HttpTestBase {
           });
 
           // Tell the client to resume
-          resumeFuture.complete();
+          resumeFuture.succeed();
         }
       });
     });
@@ -4037,7 +4037,7 @@ public abstract class HttpTest extends HttpTestBase {
         HttpClientRequest req = client.getAbs(scheme + "://localhost:" + port + "/custom");
         req.putHeader("foo", "foo_another");
         req.setHost("localhost:" + port);
-        fut.complete(req);
+        fut.succeed(req);
       });
       return fut.future();
     });

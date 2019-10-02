@@ -190,7 +190,7 @@ public class FakeClusterManager implements ClusterManager {
         this.nodeID = UUID.randomUUID().toString();
         doJoin(nodeID, this);
       }
-      fut.complete();
+      fut.succeed();
     }, resultHandler);
   }
 
@@ -206,7 +206,7 @@ public class FakeClusterManager implements ClusterManager {
           this.nodeID = null;
         }
       }
-      fut.complete();
+      fut.succeed();
     }, resultHandler);
   }
 
@@ -247,7 +247,7 @@ public class FakeClusterManager implements ClusterManager {
           }
         }
         vals.add(v);
-        fut.complete();
+        fut.succeed();
       }, taskQueue, completionHandler);
     }
 
@@ -259,7 +259,7 @@ public class FakeClusterManager implements ClusterManager {
         if (it == null) {
           it = new ChoosableSet<>(0);
         }
-        fut.complete(it);
+        fut.succeed(it);
       }, taskQueue, asyncResultHandler);
     }
 
@@ -278,7 +278,7 @@ public class FakeClusterManager implements ClusterManager {
             found = true;
           }
         }
-        fut.complete(found);
+        fut.succeed(found);
       }, taskQueue, completionHandler);
     }
 
@@ -306,7 +306,7 @@ public class FakeClusterManager implements ClusterManager {
             mapIter.remove();
           }
         }
-        fut.complete();
+        fut.succeed();
       }, taskQueue, completionHandler);
     }
   }

@@ -322,7 +322,7 @@ public class HttpClientRequestImpl extends HttpClientRequestBase implements Http
   }
 
   private void tryComplete() {
-    endPromise.tryComplete();
+    endPromise.trySucceed();
   }
 
   @Override
@@ -409,7 +409,7 @@ public class HttpClientRequestImpl extends HttpClientRequestBase implements Http
           return;
         }
       }
-      responsePromise.complete(resp);
+      responsePromise.succeed(resp);
     }
   }
 

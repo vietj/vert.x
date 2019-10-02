@@ -75,7 +75,7 @@ public class TransportTest extends VertxTestBase {
       Thread th = Thread.currentThread();
       ctx.executeBlocking(p -> {
         assertTrue(Context.isOnWorkerThread());
-        p.complete();
+        p.succeed();
       }, ar -> {
         assertSame(th, Thread.currentThread());
         testComplete();

@@ -27,7 +27,7 @@ public class SimpleServer extends AbstractVerticle {
     server.requestHandler(req -> req.response().end());
     server.listen(res -> {
       if (res.succeeded()) {
-        startPromise.complete();
+        startPromise.succeed();
       } else {
         startPromise.fail(res.cause());
       }

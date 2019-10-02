@@ -560,7 +560,7 @@ public class HttpServerRequestImpl implements HttpServerRequest {
       handler.handle(null);
     }
     if (body != null) {
-      bodyPromise.tryComplete(body);
+      bodyPromise.trySucceed(body);
     }
   }
 

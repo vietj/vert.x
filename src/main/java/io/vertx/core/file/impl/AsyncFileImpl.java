@@ -421,7 +421,7 @@ public class AsyncFileImpl implements AsyncFile {
     context.executeBlockingInternal((Promise<Void> fut) -> {
       try {
         ch.force(false);
-        fut.complete();
+        fut.succeed();
       } catch (IOException e) {
         throw new FileSystemException(e);
       }
@@ -531,7 +531,7 @@ public class AsyncFileImpl implements AsyncFile {
     handlerContext.executeBlockingInternal(res -> {
       try {
         ch.close();
-        res.complete(null);
+        res.succeed();
       } catch (IOException e) {
         res.fail(e);
       }

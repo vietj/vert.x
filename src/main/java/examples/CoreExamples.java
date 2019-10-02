@@ -74,7 +74,7 @@ public class CoreExamples {
     vertx.executeBlocking(promise -> {
       // Call some blocking API that takes a significant amount of time to return
       String result = someAPI.blockingMethod("hello");
-      promise.complete(result);
+      promise.succeed(result);
     }, res -> {
       System.out.println("The result is: " + res.result());
     });
@@ -85,7 +85,7 @@ public class CoreExamples {
     executor.executeBlocking(promise -> {
       // Call some blocking API that takes a significant amount of time to return
       String result = someAPI.blockingMethod("hello");
-      promise.complete(result);
+      promise.succeed(result);
     }, res -> {
       System.out.println("The result is: " + res.result());
     });
@@ -196,7 +196,7 @@ public class CoreExamples {
     vertx.eventBus().consumer("foo", msg -> {
       vertx.executeBlocking(promise -> {
         // Invoke blocking code with received message data
-        promise.complete(someresult);
+        promise.succeed(someresult);
       }, false, ar -> { // ordered == false
         // Handle result, e.g. reply to the message
       });

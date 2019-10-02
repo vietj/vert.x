@@ -820,7 +820,7 @@ public class Http2ServerTest extends Http2TestBase {
           });
           vertx.cancelTimer(timerID);
           drain.set(true);
-          whenFull.complete();
+          whenFull.succeed();
         } else {
           expected.append(content);
           Buffer buf = Buffer.buffer(content);
@@ -969,7 +969,7 @@ public class Http2ServerTest extends Http2TestBase {
     AtomicInteger resetCount = new AtomicInteger();
     server.requestHandler(req -> {
       req.handler(buf -> {
-        bufReceived.complete();
+        bufReceived.succeed();
       });
       req.exceptionHandler(err -> {
         assertOnIOContext(ctx);
@@ -1499,7 +1499,7 @@ public class Http2ServerTest extends Http2TestBase {
         assertOnIOContext(ctx);
         complete();
       });
-      when.complete();
+      when.succeed();
     });
     startServer(ctx);
     TestClient client = new TestClient();
@@ -1534,7 +1534,7 @@ public class Http2ServerTest extends Http2TestBase {
       req.response().push(HttpMethod.GET, "/wibble", ar -> {
         assertTrue(ar.succeeded());
         assertOnIOContext(ctx);
-        when.complete();
+        when.succeed();
         HttpServerResponse resp = ar.result();
         AtomicInteger erros = new AtomicInteger();
         resp.exceptionHandler(err -> {
@@ -1612,7 +1612,7 @@ public class Http2ServerTest extends Http2TestBase {
         assertOnIOContext(ctx);
         complete();
       });
-      when.complete();
+      when.succeed();
     });
     startServer(ctx);
     TestClient client = new TestClient();
@@ -1889,7 +1889,7 @@ public class Http2ServerTest extends Http2TestBase {
       conn.closeHandler(v -> {
         assertTrue(completed.get());
       });
-      abc.complete();
+      abc.succeed();
     };
     server.requestHandler(requestHandler);
     startServer(ctx);
@@ -1928,7 +1928,7 @@ public class Http2ServerTest extends Http2TestBase {
         assertEquals(2, status.getAndIncrement());
         testComplete();
       });
-      abc.complete();
+      abc.succeed();
     };
     server.requestHandler(requestHandler);
     startServer(ctx);
@@ -2631,7 +2631,7 @@ public class Http2ServerTest extends Http2TestBase {
       // assertEquals(20000, req.connection().remoteSettings().getMaxConcurrentStreams());
       // assertEquals(1, serverConnectionCount.get());
       // assertEquals(1, clientConnectionCount.get());
-      fut.tryComplete(resp);
+      fut.trySucceed(resp);
     }));
     if (connHandler != null) {
       req.connectionHandler(connHandler);

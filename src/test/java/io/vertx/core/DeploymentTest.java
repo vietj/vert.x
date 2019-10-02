@@ -675,14 +675,14 @@ public class DeploymentTest extends VertxTestBase {
       Verticle child1 = new MyAsyncVerticle(f2 -> {
         Context childContext = Vertx.currentContext();
         assertNotSame(parentContext, childContext);
-        f2.complete(null);
+        f2.succeed();
         testComplete();
-      }, f2 -> f2.complete(null));
+      }, Promise::succeed);
       vertx.deployVerticle(child1, ar -> {
         assertTrue(ar.succeeded());
       });
-      f.complete(null);
-    }, f -> f.complete(null));
+      f.succeed();
+    }, Promise::succeed);
     vertx.deployVerticle(verticle, ar -> {
       assertTrue(ar.succeeded());
     });
@@ -697,17 +697,17 @@ public class DeploymentTest extends VertxTestBase {
     AtomicReference<String> childDepID = new AtomicReference<>();
     CountDownLatch deployLatch = new CountDownLatch(1);
     Verticle verticle = new MyAsyncVerticle(f -> {
-      Verticle child1 = new MyAsyncVerticle(f2 -> f2.complete(null), f2 -> {
+      Verticle child1 = new MyAsyncVerticle(Promise::succeed, f2 -> {
         // Child stop is called
         assertFalse(parentStopCalled.get());
         assertFalse(childStopCalled.get());
         childStopCalled.set(true);
-        f2.complete(null);
+        f2.succeed();
       });
       vertx.deployVerticle(child1, ar -> {
         assertTrue(ar.succeeded());
         childDepID.set(ar.result());
-        f.complete(null);
+        f.succeed();
       });
     }, f2 -> {
       // Parent stop is called
@@ -717,7 +717,7 @@ public class DeploymentTest extends VertxTestBase {
       assertFalse(vertx.deploymentIDs().contains(childDepID.get()));
       parentStopCalled.set(true);
       testComplete();
-      f2.complete(null);
+      f2.succeed();
     });
     vertx.deployVerticle(verticle, ar -> {
       parentDepID.set(ar.result());
@@ -803,7 +803,7 @@ public class DeploymentTest extends VertxTestBase {
           @Override
           public void start(Promise<Void> startPromise) throws Exception {
             vertx.setTimer(100, id -> {
-              startPromise.complete();
+              startPromise.succeed();
             });
           }
           @Override
@@ -821,7 +821,7 @@ public class DeploymentTest extends VertxTestBase {
 
   @Test
   public void testAsyncDeployCalledSynchronously() throws Exception {
-    MyAsyncVerticle verticle = new MyAsyncVerticle(f -> f.complete(null), f -> f.complete(null));
+    MyAsyncVerticle verticle = new MyAsyncVerticle(Promise::succeed, Promise::succeed);
     vertx.deployVerticle(verticle, ar -> {
       assertTrue(ar.succeeded());
       testComplete();
@@ -845,10 +845,8 @@ public class DeploymentTest extends VertxTestBase {
     long start = System.currentTimeMillis();
     long delay = 1000;
     MyAsyncVerticle verticle = new MyAsyncVerticle(f -> {
-      vertx.setTimer(delay, id -> {
-        f.complete(null);
-      });
-    }, f -> f.complete(null));
+      vertx.setTimer(delay, id -> f.succeed());
+    }, Promise::succeed);
     vertx.deployVerticle(verticle, ar -> {
       assertTrue(ar.succeeded());
       long now = System.currentTimeMillis();
@@ -880,7 +878,7 @@ public class DeploymentTest extends VertxTestBase {
 
   @Test
   public void testAsyncUndeployCalledSynchronously() throws Exception {
-    MyAsyncVerticle verticle = new MyAsyncVerticle(f -> f.complete(null), f ->  f.complete(null));
+    MyAsyncVerticle verticle = new MyAsyncVerticle(Promise::succeed, Promise::succeed);
     vertx.deployVerticle(verticle, ar -> {
       assertTrue(ar.succeeded());
       vertx.undeploy(ar.result(), ar2 -> {
@@ -894,7 +892,7 @@ public class DeploymentTest extends VertxTestBase {
 
   @Test
   public void testAsyncUndeployFailureCalledSynchronously() throws Exception {
-    MyAsyncVerticle verticle = new MyAsyncVerticle(f -> f.complete(null), f -> f.fail(new Exception("foobar")));
+    MyAsyncVerticle verticle = new MyAsyncVerticle(Promise::succeed, f -> f.fail(new Exception("foobar")));
     vertx.deployVerticle(verticle, ar -> {
       assertTrue(ar.succeeded());
       vertx.undeploy(ar.result(), ar2 -> {
@@ -910,7 +908,7 @@ public class DeploymentTest extends VertxTestBase {
   @Test
   public void testAsyncUndeploy() throws Exception {
     long delay = 1000;
-    MyAsyncVerticle verticle = new MyAsyncVerticle(f-> f.complete(null), f -> vertx.setTimer(delay, id -> f.complete(null)));
+    MyAsyncVerticle verticle = new MyAsyncVerticle(Promise::succeed, f -> vertx.setTimer(delay, id -> f.succeed()));
     vertx.deployVerticle(verticle, ar -> {
       assertTrue(ar.succeeded());
       long start = System.currentTimeMillis();
@@ -929,7 +927,7 @@ public class DeploymentTest extends VertxTestBase {
   @Test
   public void testAsyncUndeployFailure() throws Exception {
     long delay = 1000;
-    MyAsyncVerticle verticle = new MyAsyncVerticle(f-> f.complete(null), f -> vertx.setTimer(delay, id -> f.fail(new Exception("foobar"))));
+    MyAsyncVerticle verticle = new MyAsyncVerticle(f-> f.succeed(null), f -> vertx.setTimer(delay, id -> f.fail(new Exception("foobar"))));
     vertx.deployVerticle(verticle, ar -> {
       assertTrue(ar.succeeded());
       long start = System.currentTimeMillis();
@@ -950,7 +948,7 @@ public class DeploymentTest extends VertxTestBase {
     Verticle verticle = new AbstractVerticle() {
       @Override
       public void stop(Promise<Void> stopPromise) throws Exception {
-        stopPromise.complete();
+        stopPromise.succeed();
         throw new Exception();
       }
     };
@@ -976,7 +974,7 @@ public class DeploymentTest extends VertxTestBase {
         Verticle child = new AbstractVerticle() {
           @Override
           public void start(Promise<Void> startPromise) throws Exception {
-            startPromise.complete();
+            startPromise.succeed();
 
             // Undeploy it directly
             vertx.runOnContext(v -> vertx.undeploy(context.deploymentID()));
@@ -984,7 +982,7 @@ public class DeploymentTest extends VertxTestBase {
         };
 
         vertx.deployVerticle(child, onSuccess(depID -> {
-          startPromise.complete();
+          startPromise.succeed();
         }));
 
       }
@@ -1015,8 +1013,8 @@ public class DeploymentTest extends VertxTestBase {
       ContextInternal ctx = (ContextInternal)Vertx.currentContext();
       ctx.addCloseHook(myCloseable1);
       ctx.addCloseHook(myCloseable2);
-      f.complete(null);
-    }, f -> f.complete(null));
+      f.succeed();
+    }, Promise::succeed);
     vertx.deployVerticle(verticle, ar -> {
       assertTrue(ar.succeeded());
       assertEquals(0, closedCount.get());
@@ -1200,7 +1198,7 @@ public class DeploymentTest extends VertxTestBase {
     public void start(Promise<Void> startPromise) throws Exception {
       vertx.deployVerticle("java:" + ChildVerticle.class.getName(), ar -> {
         if (ar.succeeded()) {
-          startPromise.complete(null);
+          startPromise.succeed();
         } else {
           ar.cause().printStackTrace();
         }
@@ -1326,7 +1324,7 @@ public class DeploymentTest extends VertxTestBase {
       @Override
       public void start(Promise<Void> startPromise) throws Exception {
         vertx.deployVerticle(verticleChild, onFailure(v -> {
-          startPromise.complete();
+          startPromise.succeed();
         }));
       }
     };

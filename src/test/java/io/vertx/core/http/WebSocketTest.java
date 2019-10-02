@@ -1324,7 +1324,7 @@ public class WebSocketTest extends VertxTestBase {
       }
       vertx.setTimer(500, id -> {
         resolved.set(true);
-        fut.complete(101);
+        fut.succeed(101);
       });
     });
     server.listen(onSuccess(s -> {
@@ -2968,7 +2968,7 @@ public class WebSocketTest extends VertxTestBase {
     server = vertx.createHttpServer()
       .websocketHandler(ws -> {
         fillQueue(ws, v1 -> {
-          resume.complete();
+          resume.succeed();
           ws.drainHandler(v2 -> {
             testComplete();
           });
@@ -3001,7 +3001,7 @@ public class WebSocketTest extends VertxTestBase {
           ws.drainHandler(v -> {
             testComplete();
           });
-          resume.complete();
+          resume.succeed();
         }));
       }));
     await();

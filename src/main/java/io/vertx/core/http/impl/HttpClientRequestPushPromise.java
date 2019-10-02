@@ -55,7 +55,7 @@ class HttpClientRequestPushPromise extends HttpClientRequestBase {
 
   @Override
   void handleResponse(HttpClientResponse resp, long timeoutMs) {
-    responsePromise.complete(resp);
+    responsePromise.succeed(resp);
   }
 
   @Override

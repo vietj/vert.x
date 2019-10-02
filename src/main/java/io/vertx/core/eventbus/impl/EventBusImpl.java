@@ -509,7 +509,7 @@ public class EventBusImpl implements EventBus, MetricsProvider {
         fail((ReplyException) reply.body());
       } else {
         trace(reply, null);
-        result.complete(reply);
+        result.succeed(reply);
       }
     }
   }
