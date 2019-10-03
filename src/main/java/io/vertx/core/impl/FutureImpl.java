@@ -12,7 +12,6 @@
 package io.vertx.core.impl;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -37,8 +36,8 @@ class FutureImpl<T> implements Promise<T>, Future<T> {
   /**
    * Create a future that hasn't completed yet
    */
-  FutureImpl(Context context) {
-    this.context = (ContextInternal) context;
+  FutureImpl(ContextInternal context) {
+    this.context = context;
   }
 
   /**

@@ -13,6 +13,7 @@ package io.vertx.core.spi;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.impl.ContextInternal;
 
 /**
  * @author <a href="http://tfox.org">Tim Fox</a>
@@ -20,6 +21,8 @@ import io.vertx.core.Promise;
 public interface FutureFactory {
 
   <T> Promise<T> promise();
+
+  <T> Promise<T> promise(ContextInternal context);
 
   <T> Promise<T> succeededPromise();
 

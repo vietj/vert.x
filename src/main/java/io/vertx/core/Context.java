@@ -262,6 +262,16 @@ public interface Context {
    */
   int getInstanceCount();
 
+  <T> Promise<T> promise();
+
+  <T> Promise<T> succeededPromise();
+
+  <T> Promise<T> succeededPromise(T value);
+
+  <T> Promise<T> failedPromise(Throwable failure);
+
+  <T> Promise<T> failedPromise(String msg);
+
   /**
    * Set an exception handler called when the context runs an action throwing an uncaught throwable.<p/>
    *

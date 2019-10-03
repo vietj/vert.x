@@ -11,6 +11,7 @@
 
 package io.vertx.core.impl;
 
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.spi.FutureFactory;
@@ -25,6 +26,11 @@ public class FutureFactoryImpl implements FutureFactory {
   @Override
   public <T> Promise<T> promise() {
     return new FutureImpl<>();
+  }
+
+  @Override
+  public <T> Promise<T> promise(ContextInternal context) {
+    return new FutureImpl<>(context);
   }
 
   @Override

@@ -20,6 +20,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1296,6 +1300,65 @@ public class FutureTest extends VertxTestBase {
     assertNull(handlerField.get(f));
     f.setHandler(ar -> {});
     assertNull(handlerField.get(f));
+  }
+
+  @Test
+  public void testSucceedOnContext() throws Exception {
+    waitFor(4);
+    Object result = new Object();
+    Context ctx = vertx.getOrCreateContext();
+    CompletableFuture<Thread> latch = new CompletableFuture<>();
+    ctx.runOnContext(v -> {
+      latch.complete(Thread.currentThread());
+    });
+    Thread elThread = latch.get(10, TimeUnit.SECONDS);
+
+    //
+    CountDownLatch latch1 = new CountDownLatch(1);
+    Promise<Object> promise1 = ctx.promise();
+    vertx.runOnContext(v -> {
+      promise1.succeed(result);
+      latch1.countDown();
+    });
+    awaitLatch(latch1);
+    promise1.future().setHandler(ar -> {
+      assertSame(elThread, Thread.currentThread());
+      assertTrue(ar.succeeded());
+      assertSame(result, ar.result());
+      complete();
+    });
+
+    //
+    Promise<Object> promise2 = ctx.promise();
+    promise2.future().setHandler(ar -> {
+      assertSame(elThread, Thread.currentThread());
+      assertTrue(ar.succeeded());
+      assertSame(result, ar.result());
+      complete();
+    });
+    vertx.runOnContext(v -> promise2.succeed(result));
+
+    //
+    Promise<Object> promise3 = ctx.promise();
+    promise3.succeed(result);
+    promise3.future().setHandler(ar -> {
+      assertSame(elThread, Thread.currentThread());
+      assertTrue(ar.succeeded());
+      assertSame(result, ar.result());
+      complete();
+    });
+
+    //
+    Promise<Object> promise4 = ctx.promise();
+    promise4.future().setHandler(ar -> {
+      assertSame(elThread, Thread.currentThread());
+      assertTrue(ar.succeeded());
+      assertSame(result, ar.result());
+      complete();
+    });
+    promise4.succeed(result);
+
+    await();
   }
 
   private void testOtherwiseEmpty(AsyncResult<String> res, Promise<String> p) {

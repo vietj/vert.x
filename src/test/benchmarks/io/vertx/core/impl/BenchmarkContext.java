@@ -14,8 +14,6 @@ package io.vertx.core.impl;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
-import java.util.concurrent.ConcurrentMap;
-
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
@@ -31,8 +29,8 @@ public class BenchmarkContext extends ContextImpl {
   }
 
   @Override
-  void executeAsync(Handler<Void> task) {
-    execute(null, task);
+  <T> void executeAsync(T value, Handler<T> task) {
+    execute(value, task);
   }
 
   @Override

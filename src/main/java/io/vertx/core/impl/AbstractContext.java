@@ -14,6 +14,7 @@ import io.netty.util.concurrent.FastThreadLocal;
 import io.netty.util.concurrent.FastThreadLocalThread;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Starter;
@@ -225,6 +226,31 @@ abstract class AbstractContext implements ContextInternal {
   @Override
   public final <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler, Handler<AsyncResult<T>> resultHandler) {
     executeBlocking(blockingCodeHandler, true, resultHandler);
+  }
+
+  @Override
+  public <T> Promise<T> promise() {
+    return Future.factory.promise(this);
+  }
+
+  @Override
+  public <T> Promise<T> succeededPromise() {
+    return null;
+  }
+
+  @Override
+  public <T> Promise<T> succeededPromise(T value) {
+    return null;
+  }
+
+  @Override
+  public <T> Promise<T> failedPromise(Throwable failure) {
+    return null;
+  }
+
+  @Override
+  public <T> Promise<T> failedPromise(String msg) {
+    return null;
   }
 
   @Override
