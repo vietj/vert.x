@@ -397,6 +397,30 @@ public interface Future<T> extends AsyncResult<T> {
     return (Future<T>) AsyncResult.super.otherwiseEmpty();
   }
 
+  @Fluent
+  default Future<T> whenCompleted(Handler<AsyncResult<T>> handler) {
+    setHandler(handler);
+    return this;
+  }
+
+  @Fluent
+  default Future<T> whenSucceeded(Handler<T> handler) {
+    return whenCompleted(ar -> {
+      if (ar.succeeded()) {
+        handler.handle(ar.result());
+      }
+    });
+  }
+
+  @Fluent
+  default Future<T> whenFailed(Handler<Throwable> handler) {
+    return whenCompleted(ar -> {
+      if (ar.failed()) {
+        handler.handle(ar.cause());
+      }
+    });
+  }
+
   @GenIgnore
   FutureFactory factory = ServiceHelper.loadFactory(FutureFactory.class);
 
