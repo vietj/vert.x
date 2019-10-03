@@ -39,6 +39,13 @@ public interface ContextInternal extends Context {
   EventLoop nettyEventLoop();
 
   /**
+   * Run the specified action asynchronously on the same context, some time after the current execution has completed.
+   *
+   * @param action  the action to run
+   */
+  <T> void runOnContext(T value, Handler<T> action);
+
+  /**
    * Like {@link #executeBlocking(Handler, boolean, Handler)} but uses the {@code queue} to order the tasks instead
    * of the internal queue of this context.
    */

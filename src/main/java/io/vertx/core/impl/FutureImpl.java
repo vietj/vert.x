@@ -12,12 +12,15 @@
 package io.vertx.core.impl;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 
 class FutureImpl<T> implements Promise<T>, Future<T> {
 
+  private final ContextInternal context;
   private boolean failed;
   private boolean succeeded;
   private Handler<AsyncResult<T>> handler;
@@ -28,6 +31,14 @@ class FutureImpl<T> implements Promise<T>, Future<T> {
    * Create a future that hasn't completed yet
    */
   FutureImpl() {
+    this(null);
+  }
+
+  /**
+   * Create a future that hasn't completed yet
+   */
+  FutureImpl(Context context) {
+    this.context = (ContextInternal) context;
   }
 
   /**
@@ -77,9 +88,17 @@ class FutureImpl<T> implements Promise<T>, Future<T> {
       }
     }
     if (callHandler) {
-      handler.handle(this);
+      callHandler(handler);
     }
     return this;
+  }
+
+  private void callHandler(Handler<AsyncResult<T>> handler) {
+    if (context != null && Vertx.currentContext() != context) {
+      context.runOnContext(this, handler);
+    } else {
+      handler.handle(this);
+    }
   }
 
   @Override
@@ -127,7 +146,7 @@ class FutureImpl<T> implements Promise<T>, Future<T> {
       handler = null;
     }
     if (h != null) {
-      h.handle(this);
+      callHandler(h);
     }
     return true;
   }

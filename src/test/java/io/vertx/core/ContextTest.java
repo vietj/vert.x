@@ -46,12 +46,15 @@ public class ContextTest extends VertxTestBase {
   }
 
   @Test
-  public void testRunOnContext() throws Exception {
-    vertx.runOnContext(v -> {
+  public void testRunOnContext() {
+    ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
+    Object expected = new Object();
+    ctx.runOnContext(expected, val1 -> {
       Thread th = Thread.currentThread();
-      Context ctx = Vertx.currentContext();
-      ctx.runOnContext(v2 -> {
+      assertSame(expected, val1);
+      ctx.runOnContext(expected, val2 -> {
         assertEquals(th, Thread.currentThread());
+        assertSame(expected, val2);
         // Execute it a few times to make sure it returns same context
         for (int i = 0; i < 10; i++) {
           Context c = Vertx.currentContext();
@@ -61,9 +64,10 @@ public class ContextTest extends VertxTestBase {
         // correct context
         new Thread() {
           public void run() {
-            ctx.runOnContext(v3 -> {
+            ctx.runOnContext(expected, val3 -> {
               assertEquals(th, Thread.currentThread());
               assertEquals(ctx, Vertx.currentContext());
+              assertSame(expected, val3);
               testComplete();
             });
           }

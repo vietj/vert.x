@@ -78,7 +78,7 @@ abstract class AbstractContext implements ContextInternal {
     }
   };
 
-  abstract void executeAsync(Handler<Void> task);
+  abstract <T> void executeAsync(T value, Handler<T> task);
 
   abstract <T> void execute(T value, Handler<T> task);
 
@@ -203,8 +203,13 @@ abstract class AbstractContext implements ContextInternal {
   // Run the task asynchronously on this same context
   @Override
   public final void runOnContext(Handler<Void> task) {
+    runOnContext(null, task);
+  }
+
+  @Override
+  public <T> void runOnContext(T value, Handler<T> task) {
     try {
-      executeAsync(task);
+      executeAsync(value, task);
     } catch (RejectedExecutionException ignore) {
       // Pool is already shut down
     }

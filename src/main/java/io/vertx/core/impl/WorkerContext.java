@@ -26,8 +26,8 @@ class WorkerContext extends ContextImpl {
   }
 
   @Override
-  void executeAsync(Handler<Void> task) {
-    execute(null, task);
+  <T> void executeAsync(T value, Handler<T> task) {
+    execute(value, task);
   }
 
   @Override
@@ -88,8 +88,9 @@ class WorkerContext extends ContextImpl {
       super(delegate, other);
     }
 
-    void executeAsync(Handler<Void> task) {
-      execute(null, task);
+    @Override
+    <T> void executeAsync(T value, Handler<T> task) {
+      execute(value, task);
     }
 
     @Override

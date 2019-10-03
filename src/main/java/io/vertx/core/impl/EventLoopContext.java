@@ -36,8 +36,9 @@ public class EventLoopContext extends ContextImpl {
     super(vertx, tracer, eventLoop, internalBlockingPool, workerPool, deployment, tccl);
   }
 
-  void executeAsync(Handler<Void> task) {
-    nettyEventLoop().execute(() -> dispatch(null, task));
+  @Override
+  <T> void executeAsync(T value, Handler<T> task) {
+    nettyEventLoop().execute(() -> dispatch(value, task));
   }
 
   @Override
@@ -66,8 +67,9 @@ public class EventLoopContext extends ContextImpl {
       super(delegate, other);
     }
 
-    void executeAsync(Handler<Void> task) {
-      nettyEventLoop().execute(() -> dispatch(null, task));
+    @Override
+    <T> void executeAsync(T value, Handler<T> task) {
+      nettyEventLoop().execute(() -> dispatch(value, task));
     }
 
     @Override
