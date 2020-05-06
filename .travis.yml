@@ -3,6 +3,8 @@ branches:
   only:
   - master
   - /^\d+\.\d+$/
+before_install:
+  - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh
 cache:
   directories:
     - $HOME/.m2
@@ -13,19 +15,20 @@ jobs:
     - stage: test
       name: "OpenJDK 8"
       jdk: openjdk8
-      script: mvn -q clean verify -B
+      script: mvn -q clean verify -B -Dtest=Http2Test
+      install: . ./install-jdk.sh --url "https://api.adoptopenjdk.net/v2/binary/releases/openjdk8?openjdk_impl=hotspot&os=linux&type=jdk&release=latest&heap_size=normal&arch=x64"
     - if: type != pull_request
       name: "OpenJDK 11"
       jdk: openjdk11
-      script: mvn -q clean verify -B
+      script: mvn -q clean verify -B -Dtest=Http2Test
     - if: type != pull_request
       name: "OpenJDK 8 / native transport"
       jdk: openjdk8
-      script: mvn -q clean verify -B -PtestNativeTransport
+      script: mvn -q clean verify -B -PtestNativeTransport -Dtest=Http2Test
     - if: type != pull_request
       name: "OpenJDK 8 / domain sockets"
       jdk: openjdk8
-      script: mvn -q clean verify -B -PtestDomainSockets
+      script: mvn -q clean verify -B -PtestDomainSockets -Dtest=Http2Test
     - stage: deploy
       name: "Deploy to Sonatype's snapshots repository"
       jdk: openjdk8
