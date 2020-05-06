@@ -399,12 +399,11 @@
               <systemProperties>
                 <vertx-test-alpn-jdk>false</vertx-test-alpn-jdk>
                 <vertx-test-alpn-openssl>true</vertx-test-alpn-openssl>
-                <vertx-test-sslcontext>openssl</vertx-test-sslcontext>
               </systemProperties>
             </configuration>
           </execution>
           <execution>
-            <id>ssl-engine:-agent</id>
+            <id>ssl-engine:agent</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
@@ -417,7 +416,6 @@
               <systemProperties>
                 <vertx-test-alpn-jdk>true</vertx-test-alpn-jdk>
                 <vertx-test-alpn-openssl>false</vertx-test-alpn-openssl>
-                <vertx-test-sslcontext>jdk</vertx-test-sslcontext>
               </systemProperties>
               <classpathDependencyExcludes>
                 <classpathDependencyExclude>io.netty:netty-tcnative-boringssl-static</classpathDependencyExclude>
@@ -438,7 +436,6 @@
               <systemProperties>
                 <vertx-test-alpn-jdk>true</vertx-test-alpn-jdk>
                 <vertx-test-alpn-openssl>true</vertx-test-alpn-openssl>
-                <vertx-test-sslcontext>jdk</vertx-test-sslcontext>
               </systemProperties>
             </configuration>
           </execution>

@@ -33,9 +33,9 @@ import org.junit.Test;
  */
 public class SSLEngineTest extends HttpTestBase {
 
-  private static boolean isJava9() {
+  private static boolean hasAlpn() {
     try {
-      SSLEngineTest.class.getClassLoader().loadClass("java.lang.invoke.VarHandle");
+      SSLEngineTest.class.getClassLoader().loadClass("sun.ssl.ALPNExtension");
       return true;
     } catch (Throwable ignore) {
       return false;
@@ -44,14 +44,13 @@ public class SSLEngineTest extends HttpTestBase {
 
   private static final boolean JDK = Boolean.getBoolean("vertx-test-alpn-jdk");
   private static boolean OPEN_SSL = Boolean.getBoolean("vertx-test-alpn-openssl");
-  private static final String EXPECTED_SSL_CONTEXT = isJava9() ? "jdk" : System.getProperty("vertx-test-sslcontext");
 
   public SSLEngineTest() {
   }
 
   @Test
   public void testDefaultEngineWithAlpn() throws Exception {
-    doTest(null, true, HttpVersion.HTTP_2, JDK | OPEN_SSL ? "ALPN is not available" : null, EXPECTED_SSL_CONTEXT, false);
+    doTest(null, true, HttpVersion.HTTP_2, JDK | OPEN_SSL ? "ALPN is not available" : null, hasAlpn() ? "jdk" : "openssl", false);
   }
 
   @Test
@@ -92,7 +91,6 @@ public class SSLEngineTest extends HttpTestBase {
     try {
       server = vertx.createHttpServer(options);
     } catch (VertxException e) {
-      e.printStackTrace();
       if (error == null) {
         fail(e);
       } else {
