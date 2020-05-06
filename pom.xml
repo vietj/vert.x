@@ -378,7 +378,6 @@
                 <include>io/vertx/it/SSLEngineTest.java</include>
               </includes>
               <systemProperties>
-                <vertx-test-alpn-jdk>false</vertx-test-alpn-jdk>
                 <vertx-test-alpn-openssl>false</vertx-test-alpn-openssl>
               </systemProperties>
               <classpathDependencyExcludes>
@@ -397,7 +396,6 @@
                 <include>io/vertx/it/SSLEngineTest.java</include>
               </includes>
               <systemProperties>
-                <vertx-test-alpn-jdk>false</vertx-test-alpn-jdk>
                 <vertx-test-alpn-openssl>true</vertx-test-alpn-openssl>
               </systemProperties>
             </configuration>
@@ -414,7 +412,6 @@
                 <include>io/vertx/it/SSLEngineTest.java</include>
               </includes>
               <systemProperties>
-                <vertx-test-alpn-jdk>true</vertx-test-alpn-jdk>
                 <vertx-test-alpn-openssl>false</vertx-test-alpn-openssl>
               </systemProperties>
               <classpathDependencyExcludes>
@@ -434,13 +431,10 @@
                 <include>io/vertx/it/SSLEngineTest.java</include>
               </includes>
               <systemProperties>
-                <vertx-test-alpn-jdk>true</vertx-test-alpn-jdk>
                 <vertx-test-alpn-openssl>true</vertx-test-alpn-openssl>
               </systemProperties>
             </configuration>
           </execution>
-
-<!--
           <execution>
             <id>no-native</id>
             <goals>
@@ -513,7 +507,6 @@
               </classpathDependencyExcludes>
             </configuration>
           </execution>
--->
           <!-- Check some netty compat (dns / http2) with unstable classes -->
           <!-- Uncomment to run them, you need to have also the dependencies in the repo as they won't be downloaded automatically -->
           <!-- It is possible to have them easily by running the build with -Dnetty.version=4.1.9.Final -Dtcnative.version=2.0.0.Final -->
