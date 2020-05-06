@@ -368,7 +368,7 @@
         <version>2.19.1</version>
         <executions>
           <execution>
-            <id>no-alpn</id>
+            <id>ssl-engine:default</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
@@ -387,7 +387,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>openssl-alpn</id>
+            <id>ssl-engine:openssl</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
@@ -404,7 +404,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>jdk-alpn</id>
+            <id>ssl-engine:-agent</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
@@ -425,7 +425,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>jdk-openssl-alpn</id>
+            <id>ssl-engine:openssl+agent</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
@@ -442,6 +442,8 @@
               </systemProperties>
             </configuration>
           </execution>
+
+<!--
           <execution>
             <id>no-native</id>
             <goals>
@@ -514,6 +516,7 @@
               </classpathDependencyExcludes>
             </configuration>
           </execution>
+-->
           <!-- Check some netty compat (dns / http2) with unstable classes -->
           <!-- Uncomment to run them, you need to have also the dependencies in the repo as they won't be downloaded automatically -->
           <!-- It is possible to have them easily by running the build with -Dnetty.version=4.1.9.Final -Dtcnative.version=2.0.0.Final -->
