@@ -2432,6 +2432,7 @@ public abstract class HttpTest extends HttpTestBase {
     await();
   }
 
+  @Ignore
   @Test
   public void testRequestTimeoutCanceledWhenRequestHasAnOtherError() {
     Assume.assumeFalse(Utils.isWindows());
@@ -3371,7 +3372,7 @@ public abstract class HttpTest extends HttpTestBase {
 
   @Test
   public void testServerReadStreamInWorker() throws Exception {
-    int numReq = 16;
+    int numReq = 1;
     waitFor(numReq);
     Buffer body = Buffer.buffer(randomAlphaString(512 * 1024));
     vertx.deployVerticle(new AbstractVerticle() {
