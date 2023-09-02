@@ -44,10 +44,10 @@ public class DeploymentManager {
 
   private static final Logger log = LoggerFactory.getLogger(DeploymentManager.class);
 
-  private final VertxInternal vertx;
+  private final VertxImpl vertx;
   private final Map<String, Deployment> deployments = new ConcurrentHashMap<>();
 
-  public DeploymentManager(VertxInternal vertx) {
+  public DeploymentManager(VertxImpl vertx) {
     this.vertx = vertx;
   }
 

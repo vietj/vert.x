@@ -31,7 +31,6 @@ import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.core.http.WebsocketVersion;
 import io.vertx.core.impl.CloseFuture;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.net.NetClient;
@@ -149,7 +148,7 @@ public class HttpClientImpl implements HttpClientInternal, MetricsProvider, Clos
   private Predicate<SocketAddress> proxyFilter;
   private volatile Handler<HttpConnection> connectionHandler;
   private volatile Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = DEFAULT_HANDLER;
-  private final Function<ContextInternal, EventLoopContext> contextProvider;
+  private final Function<ContextInternal, ContextInternal> contextProvider;
 
   public HttpClientImpl(VertxInternal vertx, HttpClientOptions options, CloseFuture closeFuture) {
     this.vertx = vertx;
@@ -192,7 +191,7 @@ public class HttpClientImpl implements HttpClientInternal, MetricsProvider, Clos
     }
     int eventLoopSize = options.getPoolEventLoopSize();
     if (eventLoopSize > 0) {
-      EventLoopContext[] eventLoops = new EventLoopContext[eventLoopSize];
+      ContextInternal[] eventLoops = new ContextInternal[eventLoopSize];
       for (int i = 0;i < eventLoopSize;i++) {
         eventLoops[i] = vertx.createEventLoopContext();
       }
@@ -249,7 +248,7 @@ public class HttpClientImpl implements HttpClientInternal, MetricsProvider, Clos
     return new ConnectionManager<>();
   }
 
-  Function<ContextInternal, EventLoopContext> contextProvider() {
+  Function<ContextInternal, ContextInternal> contextProvider() {
     return contextProvider;
   }
 
@@ -309,7 +308,7 @@ public class HttpClientImpl implements HttpClientInternal, MetricsProvider, Clos
    * Connect to a server.
    */
   public Future<HttpClientConnection> connect(SocketAddress server, SocketAddress peer) {
-    EventLoopContext context = (EventLoopContext) vertx.getOrCreateContext();
+    ContextInternal context = vertx.getOrCreateContext();
     Promise<HttpClientConnection> promise = context.promise();
     HttpChannelConnector connector = new HttpChannelConnector(this, netClient, null, null, options.getProtocolVersion(), options.isSsl(), options.isUseAlpn(), peer, server);
     connector.httpConnect(context, promise);
@@ -328,9 +327,9 @@ public class HttpClientImpl implements HttpClientInternal, MetricsProvider, Clos
     ProxyOptions proxyOptions = resolveProxyOptions(connectOptions.getProxyOptions(), addr);
     EndpointKey key = new EndpointKey(connectOptions.isSsl() != null ? connectOptions.isSsl() : options.isSsl(), proxyOptions, addr, addr);
     ContextInternal ctx = promise.context();
-    EventLoopContext eventLoopContext;
-    if (ctx instanceof EventLoopContext) {
-      eventLoopContext = (EventLoopContext) ctx;
+    ContextInternal eventLoopContext;
+    if (ctx.isEventLoopContext()) {
+      eventLoopContext = ctx;
     } else {
       eventLoopContext = vertx.createEventLoopContext(ctx.nettyEventLoop(), ctx.workerPool(), ctx.classLoader());
     }

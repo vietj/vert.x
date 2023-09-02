@@ -165,11 +165,6 @@ class DuplicatedContext implements ContextInternal {
   }
 
   @Override
-  public final void runOnContext(Handler<Void> action) {
-    delegate.runOnContext(this, action);
-  }
-
-  @Override
   public final <T> void execute(T argument, Handler<T> task) {
     delegate.execute(this, argument, task);
   }
