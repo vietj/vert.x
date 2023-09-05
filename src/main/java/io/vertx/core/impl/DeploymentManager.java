@@ -11,13 +11,7 @@
 
 package io.vertx.core.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.Verticle;
+import io.vertx.core.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -33,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -172,17 +167,29 @@ public class DeploymentManager {
                         ContextInternal callingContext,
                         ClassLoader tccl, Verticle... verticles) {
     Promise<Deployment> promise = callingContext.promise();
-    String poolName = options.getWorkerPoolName();
-
     Deployment parent = parentContext.getDeployment();
     String deploymentID = generateDeploymentID();
     DeploymentImpl deployment = new DeploymentImpl(parent, deploymentID, identifier, options);
 
     AtomicInteger deployCount = new AtomicInteger();
     AtomicBoolean failureReported = new AtomicBoolean();
+    WorkerPool workerPool = null;
     for (Verticle verticle: verticles) {
       CloseFuture closeFuture = new CloseFuture(log);
-      WorkerPool workerPool = poolName != null ? vertx.createSharedWorkerPool(poolName, options.getWorkerPoolSize(), options.getMaxWorkerExecuteTime(), options.getMaxWorkerExecuteTimeUnit()) : null;
+      if (workerPool == null) {
+        WorkerOptions workerOptions = options.getWorkerOptions();
+        if (workerOptions instanceof WorkerPoolOptions) {
+          WorkerPoolOptions workerPoolOptions = (WorkerPoolOptions) workerOptions;
+          if (workerPoolOptions.getName() != null) {
+            workerPool = vertx.createSharedWorkerPool(options.getWorkerPoolName(), options.getWorkerPoolSize(), options.getMaxWorkerExecuteTime(), options.getMaxWorkerExecuteTimeUnit());
+          }
+        } else {
+          ExecutorService pool = workerOptions.createExecutor(vertx);
+          workerPool = vertx.wrapWorkerPool(pool);
+        }
+      } else {
+        workerPool.retain();
+      }
       ContextBase context = (options.isWorker() ? vertx.createWorkerContext(deployment, closeFuture, workerPool, tccl) :
         vertx.createEventLoopContext(deployment, closeFuture, workerPool, tccl));
       VerticleHolder holder = new VerticleHolder(verticle, context, workerPool, closeFuture);

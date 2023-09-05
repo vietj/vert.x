@@ -22,6 +22,7 @@ public class WorkerPool {
 
   private final ExecutorService pool;
   private final PoolMetrics metrics;
+  private int refCount = 1;
 
   public WorkerPool(ExecutorService pool, PoolMetrics metrics) {
     this.pool = pool;
@@ -36,10 +37,25 @@ public class WorkerPool {
     return metrics;
   }
 
-  void close() {
+  synchronized void retain() {
+    if (refCount <= 0) {
+      throw new IllegalStateException();
+    }
+    refCount++;
+  }
+
+  boolean close() {
+    synchronized (this) {
+      if (refCount == 0) {
+        throw new IllegalStateException();
+      } else if (--refCount > 0) {
+        return false;
+      }
+    }
     if (metrics != null) {
       metrics.close();
     }
     pool.shutdownNow();
+    return true;
   }
 }

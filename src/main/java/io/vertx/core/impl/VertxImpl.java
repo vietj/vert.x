@@ -1089,7 +1089,6 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
   class SharedWorkerPool extends WorkerPool {
 
     private final String name;
-    private int refCount = 1;
 
     SharedWorkerPool(String name, ExecutorService workerExec, PoolMetrics workerMetrics) {
       super(workerExec, workerMetrics);
@@ -1097,14 +1096,12 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
     }
 
     @Override
-    void close() {
-      synchronized (VertxImpl.this) {
-        if (--refCount > 0) {
-          return;
-        }
+    boolean close() {
+      boolean closed = super.close();
+      if (closed) {
         namedWorkerPools.remove(name);
       }
-      super.close();
+      return closed;
     }
   }
 
@@ -1148,9 +1145,15 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
       PoolMetrics workerMetrics = metrics != null ? metrics.createPoolMetrics("worker", name, poolSize) : null;
       namedWorkerPools.put(name, sharedWorkerPool = new SharedWorkerPool(name, workerExec, workerMetrics));
     } else {
-      sharedWorkerPool.refCount++;
+      sharedWorkerPool.retain();
     }
     return sharedWorkerPool;
+  }
+
+  @Override
+  public WorkerPool wrapWorkerPool(ExecutorService executor) {
+    PoolMetrics workerMetrics = metrics != null ? metrics.createPoolMetrics("worker", null, -1) : null;
+    return new WorkerPool(executor, workerMetrics);
   }
 
   private static ThreadFactory createThreadFactory(VertxThreadFactory threadFactory, BlockedThreadChecker checker, Boolean useDaemonThread, long maxExecuteTime, TimeUnit maxExecuteTimeUnit, String prefix, boolean worker) {

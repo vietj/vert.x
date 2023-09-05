@@ -139,7 +139,6 @@ public class TaskQueueTest extends AsyncTestBase {
           }
         }
         try {
-          System.out.println("JOINING!!!");
           th.join(2_000);
         } catch (InterruptedException ignore) {
           ignore.printStackTrace(System.out);
