@@ -489,28 +489,34 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
     }
   }
 
-  @Override
-  public EventLoopContext createEventLoopContext(Deployment deployment, CloseFuture closeFuture, WorkerPool workerPool, ClassLoader tccl) {
-    return new EventLoopContext(this, eventLoopGroup.next(), internalWorkerPool, workerPool != null ? workerPool : this.workerPool, deployment, closeFuture, disableTCCL ? null : tccl);
+  private ContextBase createEventLoopContext(EventLoop eventLoop, CloseFuture closeFuture, WorkerPool workerPool, Deployment deployment, ClassLoader tccl) {
+    return new ContextBase(this, true, eventLoop, new EventLoopExecutor(eventLoop), internalWorkerPool, workerPool != null ? workerPool : this.workerPool, new TaskQueue(), deployment, closeFuture, disableTCCL ? null : tccl);
   }
 
   @Override
-  public EventLoopContext createEventLoopContext(EventLoop eventLoop, WorkerPool workerPool, ClassLoader tccl) {
-    return new EventLoopContext(this, eventLoop, internalWorkerPool, workerPool != null ? workerPool : this.workerPool, null, closeFuture, disableTCCL ? tccl : null);
+  public ContextBase createEventLoopContext(Deployment deployment, CloseFuture closeFuture, WorkerPool workerPool, ClassLoader tccl) {
+    return createEventLoopContext(eventLoopGroup.next(), closeFuture, workerPool, deployment, tccl);
   }
 
   @Override
-  public EventLoopContext createEventLoopContext() {
+  public ContextBase createEventLoopContext(EventLoop eventLoop, WorkerPool workerPool, ClassLoader tccl) {
+    return createEventLoopContext(eventLoop, closeFuture, workerPool, null, tccl);
+  }
+
+  @Override
+  public ContextBase createEventLoopContext() {
     return createEventLoopContext(null, closeFuture, null, Thread.currentThread().getContextClassLoader());
   }
 
   @Override
-  public WorkerContext createWorkerContext(Deployment deployment, CloseFuture closeFuture, WorkerPool workerPool, ClassLoader tccl) {
-    return new WorkerContext(this, internalWorkerPool, workerPool != null ? workerPool : this.workerPool, deployment, closeFuture, disableTCCL ? null : tccl);
+  public ContextBase createWorkerContext(Deployment deployment, CloseFuture closeFuture, WorkerPool workerPool, ClassLoader tccl) {
+    TaskQueue orderedTasks = new TaskQueue();
+    WorkerPool wp = workerPool != null ? workerPool : this.workerPool;
+    return new ContextBase(this, false, eventLoopGroup.next(), new WorkerExecutor(wp, orderedTasks), internalWorkerPool, wp, orderedTasks, deployment, closeFuture, disableTCCL ? null : tccl);
   }
 
   @Override
-  public WorkerContext createWorkerContext() {
+  public ContextBase createWorkerContext() {
     return createWorkerContext(null, closeFuture, null, Thread.currentThread().getContextClassLoader());
   }
 
@@ -1083,7 +1089,6 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
   class SharedWorkerPool extends WorkerPool {
 
     private final String name;
-    private int refCount = 1;
 
     SharedWorkerPool(String name, ExecutorService workerExec, PoolMetrics workerMetrics) {
       super(workerExec, workerMetrics);
@@ -1091,14 +1096,12 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
     }
 
     @Override
-    void close() {
-      synchronized (VertxImpl.this) {
-        if (--refCount > 0) {
-          return;
-        }
+    boolean close() {
+      boolean closed = super.close();
+      if (closed) {
         namedWorkerPools.remove(name);
       }
-      super.close();
+      return closed;
     }
   }
 
@@ -1142,9 +1145,15 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
       PoolMetrics workerMetrics = metrics != null ? metrics.createPoolMetrics("worker", name, poolSize) : null;
       namedWorkerPools.put(name, sharedWorkerPool = new SharedWorkerPool(name, workerExec, workerMetrics));
     } else {
-      sharedWorkerPool.refCount++;
+      sharedWorkerPool.retain();
     }
     return sharedWorkerPool;
+  }
+
+  @Override
+  public WorkerPool wrapWorkerPool(ExecutorService executor) {
+    PoolMetrics workerMetrics = metrics != null ? metrics.createPoolMetrics("worker", null, -1) : null;
+    return new WorkerPool(executor, workerMetrics);
   }
 
   private static ThreadFactory createThreadFactory(VertxThreadFactory threadFactory, BlockedThreadChecker checker, Boolean useDaemonThread, long maxExecuteTime, TimeUnit maxExecuteTimeUnit, String prefix, boolean worker) {
