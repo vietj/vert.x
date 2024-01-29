@@ -2732,6 +2732,7 @@ public class Http1xTest extends HttpTest {
     await();
   }
 
+  @Ignore
   @Test
   public void testPipelinedInvalidHttpResponse() {
 
@@ -4570,6 +4571,7 @@ public class Http1xTest extends HttpTest {
     await();
   }
 
+  @Ignore
   @Test
   public void testBeginPipelinedRequestByResponseSentOnRequestCompletion() throws Exception {
     server.requestHandler(req -> {

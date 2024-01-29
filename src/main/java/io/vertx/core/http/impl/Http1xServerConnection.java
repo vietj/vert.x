@@ -157,7 +157,8 @@ public class Http1xServerConnection extends Http1xConnectionBase<ServerWebSocket
     // fast-path first
     if (msg == LastHttpContent.EMPTY_LAST_CONTENT) {
       onEnd();
-    } else if (msg instanceof DefaultHttpRequest) {
+    } else {
+      if (msg instanceof DefaultHttpRequest) {
         // fast path type check vs concrete class
         DefaultHttpRequest request = (DefaultHttpRequest) msg;
         ContextInternal requestCtx = streamContextSupplier.get();
@@ -172,7 +173,10 @@ public class Http1xServerConnection extends Http1xConnectionBase<ServerWebSocket
         req.handleBegin(writable, keepAlive);
         Handler<HttpServerRequest> handler = request.decoderResult().isSuccess() ? requestHandler : invalidRequestHandler;
         req.context.emit(req, handler);
-    } else {
+        if (request.decoderResult().isFailure()) {
+          return;
+        }
+      }
       handleOther(msg);
     }
   }

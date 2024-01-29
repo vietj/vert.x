@@ -794,7 +794,9 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
     }
     if (stream == null) {
       fail(new VertxException("Received HTTP message with no request in progress"));
-    } else if (obj instanceof io.netty.handler.codec.http.HttpResponse) {
+      return;
+    }
+    if (obj instanceof io.netty.handler.codec.http.HttpResponse) {
       io.netty.handler.codec.http.HttpResponse response = (io.netty.handler.codec.http.HttpResponse) obj;
       HttpVersion version;
       if (response.protocolVersion() == io.netty.handler.codec.http.HttpVersion.HTTP_1_0) {
@@ -807,7 +809,8 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
         response.status().code(),
         response.status().reasonPhrase(),
         new HeadersAdaptor(response.headers())));
-    } else if (obj instanceof HttpContent) {
+    }
+    if (obj instanceof HttpContent) {
       HttpContent chunk = (HttpContent) obj;
       if (chunk.content().isReadable()) {
         handleResponseChunk(stream, chunk.content());
