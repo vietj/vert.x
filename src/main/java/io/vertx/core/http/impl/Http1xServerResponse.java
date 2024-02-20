@@ -47,6 +47,7 @@ import io.vertx.core.spi.metrics.Metrics;
 import io.vertx.core.spi.observability.HttpResponse;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Set;
 
@@ -447,6 +448,10 @@ public class Http1xServerResponse implements HttpServerResponse, HttpResponse {
 
       // fail early before status code/headers are written to the response
       if (actualLength < 0) {
+        try {
+          raf.close();
+        } catch (IOException ignore) {
+        }
         Exception exception = new IllegalArgumentException("offset : " + offset + " is larger than the requested file length : " + file.length());
         return ctx.failedFuture(exception);
       }

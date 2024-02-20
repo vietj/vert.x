@@ -552,22 +552,24 @@ public class Http2ServerResponse implements HttpServerResponse, HttpResponse {
         long fileLength = file.getReadLength();
         long contentLength = Math.min(length, fileLength);
         // fail early before status code/headers are written to the response
+        Future<Void> fut;
         if (contentLength < 0) {
           Exception exception = new IllegalStateException("offset : " + offset + " is larger than the requested file length : " + fileLength);
-          return Future.failedFuture(exception);
-        }
-        if (headers.get(HttpHeaderNames.CONTENT_LENGTH) == null) {
-          putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(contentLength));
-        }
-        if (headers.get(HttpHeaderNames.CONTENT_TYPE) == null) {
-          String contentType = MimeMapping.getMimeTypeForFilename(filename);
-          if (contentType != null) {
-            putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
+          fut = Future.failedFuture(exception);
+        } else {
+          if (headers.get(HttpHeaderNames.CONTENT_LENGTH) == null) {
+            putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(contentLength));
           }
+          if (headers.get(HttpHeaderNames.CONTENT_TYPE) == null) {
+            String contentType = MimeMapping.getMimeTypeForFilename(filename);
+            if (contentType != null) {
+              putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
+            }
+          }
+          checkSendHeaders(false);
+          fut = file.pipeTo(this);
         }
-        checkSendHeaders(false);
-        return file
-          .pipeTo(this)
+        return fut
           .eventually(file::close);
     });
   }
