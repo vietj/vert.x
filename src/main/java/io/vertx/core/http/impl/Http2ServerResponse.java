@@ -19,6 +19,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpStatusClass;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.Http2Headers;
+import io.netty.util.internal.ObjectUtil;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -540,26 +541,36 @@ public class Http2ServerResponse implements HttpServerResponse, HttpResponse {
 
   @Override
   public Future<Void> sendFile(String filename, long offset, long length) {
+    ObjectUtil.checkPositiveOrZero(offset, "offset");
+    ObjectUtil.checkPositiveOrZero(length, "length");
     synchronized (conn) {
       checkValid();
     }
     return HttpUtils
       .resolveFile(stream.context, filename, offset, length)
       .compose(file -> {
-        long contentLength = Math.min(length, file.getReadLength());
-        if (headers.get(HttpHeaderNames.CONTENT_LENGTH) == null) {
-          putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(contentLength));
-        }
-        if (headers.get(HttpHeaderNames.CONTENT_TYPE) == null) {
-          String contentType = MimeMapping.getMimeTypeForFilename(filename);
-          if (contentType != null) {
-            putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
+        long fileLength = file.getReadLength();
+        long contentLength = Math.min(length, fileLength);
+        // fail early before status code/headers are written to the response
+        Future<Void> fut;
+        if (contentLength < 0) {
+          Exception exception = new IllegalStateException("offset : " + offset + " is larger than the requested file length : " + fileLength);
+          fut = Future.failedFuture(exception);
+        } else {
+          if (headers.get(HttpHeaderNames.CONTENT_LENGTH) == null) {
+            putHeader(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(contentLength));
           }
+          if (headers.get(HttpHeaderNames.CONTENT_TYPE) == null) {
+            String contentType = MimeMapping.getMimeTypeForFilename(filename);
+            if (contentType != null) {
+              putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
+            }
+          }
+          checkSendHeaders(false);
+          fut = file.pipeTo(this);
         }
-        checkSendHeaders(false);
-        return file
-          .pipeTo(this)
-          .eventually(() -> file.close());
+        return fut
+          .eventually(file::close);
     });
   }
 
