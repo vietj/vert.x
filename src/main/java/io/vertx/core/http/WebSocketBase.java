@@ -29,6 +29,7 @@ import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 import java.security.cert.Certificate;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base WebSocket implementation.
@@ -205,6 +206,9 @@ public interface WebSocketBase extends ReadStream<Buffer>, WriteStream<Buffer> {
   @Fluent
   WebSocketBase closeHandler(@Nullable Handler<Void> handler);
 
+  @Fluent
+  WebSocketBase shutdownHandler(@Nullable Handler<Void> handler);
+
   /**
    * Set a frame handler on the connection. This handler will be called when frames are read on the connection.
    *
@@ -291,6 +295,28 @@ public interface WebSocketBase extends ReadStream<Buffer>, WriteStream<Buffer> {
    * @return a future completed with the result
    */
   Future<Void> close(short statusCode, @Nullable String reason);
+
+  default Future<Void> shutdown() {
+    return shutdown(30, TimeUnit.SECONDS);
+  }
+
+  default Future<Void> shutdown(short statusCode) {
+    return shutdown(30, TimeUnit.SECONDS, statusCode);
+  }
+
+  default Future<Void> shutdown(short statusCode, @Nullable String reason) {
+    return shutdown(30, TimeUnit.SECONDS, statusCode, reason);
+  }
+
+  default Future<Void> shutdown(long timeout, TimeUnit unit) {
+    return shutdown(timeout, unit, (short)0);
+  }
+
+  default Future<Void> shutdown(long timeout, TimeUnit unit, short statusCode) {
+    return shutdown(timeout, unit, statusCode, null);
+  }
+
+  Future<Void> shutdown(long timeout, TimeUnit unit, short statusCode, @Nullable String reason);
 
   /**
    * @return the remote address for this connection, possibly {@code null} (e.g a server bound on a domain socket).

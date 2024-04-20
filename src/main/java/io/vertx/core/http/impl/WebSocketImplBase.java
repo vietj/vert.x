@@ -20,6 +20,7 @@ import io.netty.handler.codec.http.websocketx.ContinuationWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -42,6 +43,7 @@ import javax.security.cert.X509Certificate;
 import java.security.cert.Certificate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static io.vertx.core.net.impl.VertxHandler.*;
 
@@ -74,6 +76,7 @@ public abstract class WebSocketImplBase<S extends WebSocket> implements WebSocke
   private Handler<Buffer> pongHandler;
   private Handler<Void> drainHandler;
   private Handler<Void> closeHandler;
+  private Handler<Void> shutdownHandler;
   private Handler<Void> endHandler;
   protected final Http1xConnectionBase conn;
   private boolean closed;
@@ -171,6 +174,11 @@ public abstract class WebSocketImplBase<S extends WebSocket> implements WebSocke
     } else {
       return context.succeededFuture();
     }
+  }
+
+  @Override
+  public Future<Void> shutdown(long timeout, TimeUnit unit, short statusCode, @Nullable String reason) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -720,6 +728,15 @@ public abstract class WebSocketImplBase<S extends WebSocket> implements WebSocke
     synchronized (conn) {
       checkClosed();
       this.closeHandler = handler;
+      return (S) this;
+    }
+  }
+
+  @Override
+  public S shutdownHandler(Handler<Void> handler) {
+    synchronized (conn) {
+      checkClosed();
+      this.shutdownHandler = handler;
       return (S) this;
     }
   }
