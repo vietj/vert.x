@@ -92,8 +92,8 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
   private final long highWaterMark;
   private final boolean pooled;
 
-  private Deque<Stream> requests = new ArrayDeque<>();
-  private Deque<Stream> responses = new ArrayDeque<>();
+  private final Deque<Stream> requests = new ArrayDeque<>();
+  private final Deque<Stream> responses = new ArrayDeque<>();
   private boolean closed;
   private boolean evicted;
 
@@ -709,12 +709,19 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
     }
   }
 
-  private void checkLifecycle() {
+  @Override
+  protected boolean tryClose() {
+    return checkLifecycle();
+  }
+
+  private boolean checkLifecycle() {
     if (close || (shutdown && requests.isEmpty() && responses.isEmpty())) {
       close();
+      return true;
     } else if (!isConnect) {
       expirationTimestamp = expirationTimestampOf(keepAliveTimeout);
     }
+    return false;
   }
 
   @Override
@@ -1152,11 +1159,6 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
 
   protected void handleClosed() {
     super.handleClosed();
-    long timerID = shutdownTimerID;
-    if (timerID != -1) {
-      shutdownTimerID = -1L;
-      vertx.cancelTimer(timerID);
-    }
     closed = true;
     if (metrics != null) {
       HttpClientMetrics met = client.metrics();
@@ -1265,32 +1267,6 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
   @Override
   public boolean isValid() {
     return expirationTimestamp == 0 || System.currentTimeMillis() <= expirationTimestamp;
-  }
-
-  private synchronized void shutdownNow() {
-    shutdownTimerID = -1L;
-    close();
-  }
-
-  protected void shutdown(long timeout, TimeUnit unit, PromiseInternal<Void> promise) {
-    synchronized (this) {
-      if (shutdown) {
-        promise.fail("Already shutdown");
-        return;
-      }
-      shutdown = true;
-      closeFuture().onComplete(promise);
-    }
-    synchronized (this) {
-      if (!closed) {
-        if (timeout > 0L) {
-          shutdownTimerID = context.setTimer(unit.toMillis(timeout), id -> shutdownNow());
-        } else {
-          close = true;
-        }
-      }
-    }
-    checkLifecycle();
   }
 
   /**

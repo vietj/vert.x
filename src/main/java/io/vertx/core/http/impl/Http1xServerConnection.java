@@ -48,7 +48,6 @@ import io.vertx.core.spi.metrics.HttpServerMetrics;
 import io.vertx.core.spi.tracing.VertxTracer;
 import io.vertx.core.tracing.TracingPolicy;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
@@ -108,23 +107,16 @@ public class Http1xServerConnection extends Http1xConnectionBase<ServerWebSocket
     this.handle100ContinueAutomatically = options.isHandle100ContinueAutomatically();
     this.tracingPolicy = options.getTracingPolicy();
     this.wantClose = false;
-    this.shutdownTimerID = -1L;
   }
 
-  protected void shutdown(long timeout, TimeUnit unit, Promise<Void> promise) {
-    if (shutdownTimerID == -1L) {
-      if (responseInProgress != null) {
-        wantClose = true;
-        shutdownTimerID = context.setTimer(unit.toMillis(timeout), id -> {
-          close();
-        });
-      } else {
-        close();
-      }
-      Future<Void> f = closeFuture();
-      f.onComplete(promise);
+  @Override
+  protected boolean tryClose() {
+    if (responseInProgress != null) {
+      wantClose = true;
+      return false;
     } else {
-      promise.fail("Already shutdown");
+      close();
+      return true;
     }
   }
 
@@ -216,20 +208,8 @@ public class Http1xServerConnection extends Http1xConnectionBase<ServerWebSocket
     tryClose = wantClose && responseInProgress == null;
     request.context.execute(request, Http1xServerRequest::handleEnd);
     if (tryClose) {
-      if (shutdownTimerID != -1L) {
-        if (!vertx.cancelTimer(shutdownTimerID)) {
-          return;
-        }
-        shutdownTimerID = -1L;
-      }
-      flushAndClose();
+      super.close();
     }
-  }
-
-  private void flushAndClose() {
-    ChannelPromise channelFuture = channelFuture();
-    writeToChannel(Unpooled.EMPTY_BUFFER, channelFuture);
-    channelFuture.addListener(fut -> close());
   }
 
   void write(HttpObject msg, PromiseInternal<Void> promise) {
@@ -261,18 +241,12 @@ public class Http1xServerConnection extends Http1xConnectionBase<ServerWebSocket
         if (requestInProgress == request || webSocket != null) {
           // Deferred
         } else {
-          if (wantClose && shutdownTimerID == -1L) {
-            // No keep-alive
-            flushAndClose();
-          } else {
-            Http1xServerRequest next = request.next();
-            if (next != null) {
-              // Handle pipelined request
-              handleNext(next);
-            } else if (wantClose && shutdownTimerID != -1L && vertx.cancelTimer(shutdownTimerID)) {
-              shutdownTimerID = -1L;
-              flushAndClose();
-            }
+          Http1xServerRequest next = request.next();
+          if (next != null) {
+            // Handle pipelined request
+            handleNext(next);
+          } else if (wantClose) {
+            super.close();
           }
         }
       } else {

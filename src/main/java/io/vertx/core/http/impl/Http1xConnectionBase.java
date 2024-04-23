@@ -51,11 +51,16 @@ import static io.vertx.core.net.impl.VertxHandler.safeBuffer;
 abstract class Http1xConnectionBase<S extends WebSocketImplBase<S>> extends ConnectionBase implements io.vertx.core.http.HttpConnection {
 
   protected S webSocket;
-  protected boolean shutdown;
-  protected long shutdownTimerID;
+  protected boolean shutdown; // Make this private
+  private long shutdownTimerID;
 
   Http1xConnectionBase(ContextInternal context, ChannelHandlerContext chctx) {
     super(context, chctx);
+    this.shutdownTimerID = -1L;
+  }
+
+  boolean isShutdown() {
+    return shutdown;
   }
 
   @Override
@@ -66,8 +71,32 @@ abstract class Http1xConnectionBase<S extends WebSocketImplBase<S>> extends Conn
   }
 
   protected void shutdown(long timeout, TimeUnit unit, Promise<Void> promise) {
-
+    synchronized (this) {
+      if (shutdown) {
+        promise.fail("Already shutdown");
+        return;
+      }
+      shutdown = true;
+    }
+    Future<Void> f = closeFuture();
+    f.onComplete(promise);
+    boolean closed = tryClose();
+    if (!closed) {
+      synchronized (this) {
+        if (timeout > 0L) {
+          if (shutdownTimerID == -1L) {
+            shutdownTimerID = context.setTimer(unit.toMillis(timeout), id -> {
+              close();
+            });
+          }
+          return;
+        }
+      }
+      close();
+    }
   }
+
+  protected abstract boolean tryClose();
 
   @Override
   protected void handleEvent(Object evt) {
@@ -77,6 +106,16 @@ abstract class Http1xConnectionBase<S extends WebSocketImplBase<S>> extends Conn
     } else {
       super.handleEvent(evt);
     }
+  }
+
+  @Override
+  protected void handleClosed() {
+    synchronized (this) {
+      if (shutdownTimerID != -1L) {
+        vertx.cancelTimer(shutdownTimerID);
+      }
+    }
+    super.handleClosed();
   }
 
   void handleWsFrame(WebSocketFrame msg) {
