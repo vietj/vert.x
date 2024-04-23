@@ -29,6 +29,7 @@ import io.netty.handler.stream.ChunkedFile;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.GoAway;
 import io.vertx.core.http.Http2Settings;
@@ -38,6 +39,9 @@ import io.vertx.core.http.impl.ws.WebSocketFrameImpl;
 import io.vertx.core.http.impl.ws.WebSocketFrameInternal;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.impl.ConnectionBase;
+import io.vertx.core.net.impl.ShutdownEvent;
+
+import java.util.concurrent.TimeUnit;
 
 import static io.vertx.core.net.impl.VertxHandler.safeBuffer;
 
@@ -47,9 +51,32 @@ import static io.vertx.core.net.impl.VertxHandler.safeBuffer;
 abstract class Http1xConnectionBase<S extends WebSocketImplBase<S>> extends ConnectionBase implements io.vertx.core.http.HttpConnection {
 
   protected S webSocket;
+  protected boolean shutdown;
+  protected long shutdownTimerID;
 
   Http1xConnectionBase(ContextInternal context, ChannelHandlerContext chctx) {
     super(context, chctx);
+  }
+
+  @Override
+  public Future<Void> shutdown(long timeout, TimeUnit unit) {
+    Promise<Void> promise = vertx.promise();
+    context.execute(() -> shutdown(timeout, unit, promise));
+    return promise.future();
+  }
+
+  protected void shutdown(long timeout, TimeUnit unit, Promise<Void> promise) {
+
+  }
+
+  @Override
+  protected void handleEvent(Object evt) {
+    if (evt instanceof ShutdownEvent) {
+      ShutdownEvent shutdown = (ShutdownEvent) evt;
+      shutdown(shutdown.timeout(), shutdown.timeUnit());
+    } else {
+      super.handleEvent(evt);
+    }
   }
 
   void handleWsFrame(WebSocketFrame msg) {

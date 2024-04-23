@@ -100,8 +100,6 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
   private Handler<Void> evictionHandler = DEFAULT_EVICTION_HANDLER;
   private Handler<Object> invalidMessageHandler = INVALID_MSG_HANDLER;
   private boolean close;
-  private boolean shutdown;
-  private long shutdownTimerID = -1L;
   private boolean isConnect;
   private int keepAliveTimeout;
   private long expirationTimestamp;
@@ -145,16 +143,6 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
   public HttpClientConnectionInternal evictionHandler(Handler<Void> handler) {
     evictionHandler = handler;
     return this;
-  }
-
-  @Override
-  protected void handleEvent(Object evt) {
-    if (evt instanceof ShutdownEvent) {
-      ShutdownEvent shutdown = (ShutdownEvent) evt;
-      shutdown(shutdown.timeout(), shutdown.timeUnit());
-    } else {
-      super.handleEvent(evt);
-    }
   }
 
   @Override
@@ -1279,19 +1267,12 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
     return expirationTimestamp == 0 || System.currentTimeMillis() <= expirationTimestamp;
   }
 
-  @Override
-  public Future<Void> shutdown(long timeout, TimeUnit unit) {
-    PromiseInternal<Void> promise = vertx.promise();
-    shutdown(timeout, unit, promise);
-    return promise.future();
-  }
-
   private synchronized void shutdownNow() {
     shutdownTimerID = -1L;
     close();
   }
 
-  private void shutdown(long timeout, TimeUnit unit, PromiseInternal<Void> promise) {
+  protected void shutdown(long timeout, TimeUnit unit, PromiseInternal<Void> promise) {
     synchronized (this) {
       if (shutdown) {
         promise.fail("Already shutdown");

@@ -83,7 +83,6 @@ public class Http1xServerConnection extends Http1xConnectionBase<ServerWebSocket
   private Http1xServerRequest requestInProgress;
   private Http1xServerRequest responseInProgress;
   private boolean wantClose;
-  private long shutdownTimerID;
   private boolean channelPaused;
   private Handler<HttpServerRequest> requestHandler;
   private Handler<HttpServerRequest> invalidRequestHandler;
@@ -112,14 +111,7 @@ public class Http1xServerConnection extends Http1xConnectionBase<ServerWebSocket
     this.shutdownTimerID = -1L;
   }
 
-  @Override
-  public Future<Void> shutdown(long timeout, TimeUnit unit) {
-    Promise<Void> promise = vertx.promise();
-    context.execute(() -> shutdown(promise, timeout, unit));
-    return promise.future();
-  }
-
-  private void shutdown(Promise<Void> promise, long timeout, TimeUnit unit) {
+  protected void shutdown(long timeout, TimeUnit unit, Promise<Void> promise) {
     if (shutdownTimerID == -1L) {
       if (responseInProgress != null) {
         wantClose = true;
