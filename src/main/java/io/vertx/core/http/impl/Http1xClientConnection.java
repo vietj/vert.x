@@ -57,7 +57,6 @@ import io.vertx.core.streams.impl.InboundBuffer;
 
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 import static io.netty.handler.codec.http.websocketx.WebSocketVersion.*;
@@ -99,7 +98,7 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
 
   private Handler<Void> evictionHandler = DEFAULT_EVICTION_HANDLER;
   private Handler<Object> invalidMessageHandler = INVALID_MSG_HANDLER;
-  private boolean close;
+  private boolean wantClose;
   private boolean isConnect;
   private int keepAliveTimeout;
   private long expirationTimestamp;
@@ -330,7 +329,7 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
       if (!inflight) {
         requests.remove(stream);
       }
-      close = inflight;
+      wantClose = inflight;
     }
     checkLifecycle();
     return !inflight;
@@ -715,7 +714,7 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
   }
 
   private boolean checkLifecycle() {
-    if (close || (shutdown && requests.isEmpty() && responses.isEmpty())) {
+    if (wantClose || (shutdown && requests.isEmpty() && responses.isEmpty())) {
       close();
       return true;
     } else if (!isConnect) {
@@ -906,7 +905,7 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
           // currently Vertx forces the Connection header if keepalive is enabled for 1.0
           close = true;
         }
-        this.close = close;
+        this.wantClose = close;
         String keepAliveHeader = response.headers.get(HttpHeaderNames.KEEP_ALIVE);
         if (keepAliveHeader != null) {
           int timeout = HttpUtils.parseKeepAliveHeaderTimeout(keepAliveHeader);
