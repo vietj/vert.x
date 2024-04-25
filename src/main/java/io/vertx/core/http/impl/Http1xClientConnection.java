@@ -724,14 +724,14 @@ public class Http1xClientConnection extends Http1xConnectionBase<WebSocketImpl> 
   }
 
   @Override
-  public Future<Void> close() {
+  protected Future<Void> doClose() {
     if (!evicted) {
       evicted = true;
       if (evictionHandler != null) {
         evictionHandler.handle(null);
       }
     }
-    return super.close();
+    return super.doClose();
   }
 
   private Throwable validateMessage(Object msg) {

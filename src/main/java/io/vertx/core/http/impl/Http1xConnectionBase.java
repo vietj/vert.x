@@ -158,11 +158,15 @@ abstract class Http1xConnectionBase<S extends WebSocketImplBase<S>> extends Conn
       sock = webSocket;
     }
     if (sock == null) {
-      return super.close();
+      return doClose();
     } else {
       sock.close();
       return closeFuture();
     }
+  }
+
+  protected Future<Void> doClose() {
+    return super.close();
   }
 
   @Override
