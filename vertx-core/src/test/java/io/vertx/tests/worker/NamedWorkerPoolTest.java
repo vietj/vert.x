@@ -13,6 +13,7 @@ package io.vertx.tests.worker;
 
 import io.vertx.core.*;
 import io.vertx.core.impl.VertxThread;
+import io.vertx.test.core.Repeat;
 import io.vertx.test.core.TestUtils;
 import io.vertx.test.core.VertxTestBase;
 import org.junit.Test;
@@ -268,6 +269,7 @@ public class NamedWorkerPoolTest extends VertxTestBase {
     await();
   }
 
+  @Repeat(times = 10_000)
   @Test
   public void testDeployUsingNamedPool() {
     AtomicReference<Thread> thread = new AtomicReference<>();
@@ -290,7 +292,15 @@ public class NamedWorkerPoolTest extends VertxTestBase {
         });
       }
     }, new DeploymentOptions().setWorkerPoolName(poolName));
-    assertWaitUntil(() -> thread.get() != null && thread.get().getState() == Thread.State.TERMINATED);
+    try {
+      assertWaitUntil(() -> thread.get() != null && thread.get().getState() == Thread.State.TERMINATED);
+    } catch (Exception e) {
+      System.out.println(thread.get().getState());
+      Exception f = new Exception();
+      f.setStackTrace(thread.get().getStackTrace());
+      f.printStackTrace();
+      throw e;
+    }
   }
 
   @Test
