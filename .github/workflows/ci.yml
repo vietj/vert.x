@@ -29,7 +29,7 @@ jobs:
           java-version: ${{ inputs.jdk }}
           distribution: temurin
       - name: Run tests
-        run: mvn -s .github/maven-ci-settings.xml -q clean verify -B ${{ inputs.profile }} -Dtest=Http1xTest -pl vertx-core
+        run: mvn -s .github/maven-ci-settings.xml -q clean verify -B ${{ inputs.profile }} -pl vertx-core
       - name: Archive heap dump file
         if: always()
         uses: actions/upload-artifact@v4
