@@ -153,8 +153,8 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
   private final VertxThreadFactory threadFactory;
   private final ExecutorServiceFactory executorServiceFactory;
   private final ThreadFactory eventLoopThreadFactory;
-  private final EventLoopGroup eventLoopGroup;
-  private final EventLoopGroup acceptorEventLoopGroup;
+  private EventLoopGroup eventLoopGroup;
+  private EventLoopGroup acceptorEventLoopGroup;
   private final ExecutorService virtualThreadExecutor;
   private final BlockedThreadChecker checker;
   private final HostnameResolver hostnameResolver;
@@ -979,12 +979,14 @@ public class VertxImpl implements VertxInternal, MetricsProvider {
       acceptorEventLoopGroup.shutdownGracefully(0, 10, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
         @Override
         public void operationComplete(io.netty.util.concurrent.Future future) throws Exception {
+          acceptorEventLoopGroup = null;
           if (!future.isSuccess()) {
             log.warn("Failure in shutting down acceptor event loop group", future.cause());
           }
           eventLoopGroup.shutdownGracefully(0, 10, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future future) throws Exception {
+              eventLoopGroup = null;
               if (!future.isSuccess()) {
                 log.warn("Failure in shutting down event loop group", future.cause());
               }
