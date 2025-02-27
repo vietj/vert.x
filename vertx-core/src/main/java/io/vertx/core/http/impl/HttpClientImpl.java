@@ -160,6 +160,8 @@ public class HttpClientImpl extends HttpClientBase implements HttpClientInternal
   @Override
   protected void doClose(Promise<Void> p) {
     httpCM.close();
+    connectionHandler = null;
+    redirectHandler = null;
     super.doClose(p);
   }
 
