@@ -59,7 +59,7 @@ class NetClientImpl implements NetClientInternal {
   private final NetClientOptions options;
   private final SslContextManager sslContextManager;
   private volatile ClientSSLOptions sslOptions;
-  public final ChannelGroup channelGroup;
+  private volatile ChannelGroup channelGroup;
   private final TCPMetrics metrics;
   public ShutdownEvent closeEvent;
   private ChannelGroupFuture graceFuture;
@@ -184,6 +184,7 @@ class NetClientImpl implements NetClientInternal {
 
   private void doClose(Promise<Void> completion) {
     ChannelGroupFuture fut = channelGroup.close();
+    channelGroup = null;
     if (metrics != null) {
       PromiseInternal<Void> p = (PromiseInternal) Promise.promise();
       fut.addListener(p);
