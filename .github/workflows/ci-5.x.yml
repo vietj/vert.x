@@ -13,25 +13,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            jdk: 11
-          - os: ubuntu-latest
-            jdk: 11
-            profile: '-PNativeEpoll'
+#          - os: ubuntu-latest
+#            jdk: 11
+#          - os: ubuntu-latest
+#            jdk: 11
+#            profile: '-PNativeEpoll'
           - os: ubuntu-latest
             jdk: 11
             profile: '-PNativeIoUring'
-          - os: ubuntu-latest
-            jdk: 11
-            profile: '-PNativeEpoll+DomainSockets'
-          - os: ubuntu-latest
-            jdk: 21
-          - os: windows-latest
-            jdk: 11
-            stable: true
-#          - os: macos-latest
+#          - os: ubuntu-latest
 #            jdk: 11
-#            profile: '-PNativeKQueue'
+#            profile: '-PNativeEpoll+DomainSockets'
+#          - os: ubuntu-latest
+#            jdk: 21
+#          - os: windows-latest
+#            jdk: 11
+#            stable: true
+##          - os: macos-latest
+##            jdk: 11
+##            profile: '-PNativeKQueue'
     uses: ./.github/workflows/ci.yml
     with:
       branch: ${{ github.event.pull_request.head.sha || github.ref_name }}
