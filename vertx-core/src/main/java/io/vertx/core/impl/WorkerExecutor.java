@@ -10,9 +10,9 @@
  */
 package io.vertx.core.impl;
 
-import io.vertx.core.ThreadingModel;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.EventExecutor;
+import io.vertx.core.internal.WorkerPool;
 import io.vertx.core.spi.metrics.PoolMetrics;
 
 import java.util.concurrent.CountDownLatch;
@@ -33,9 +33,9 @@ public class WorkerExecutor implements EventExecutor {
       throw new IllegalStateException(msg);
     }
     ContextInternal ctx = VertxImpl.currentContext(thread);
-    if (ctx != null && ctx.inThread()) {
-      // It can only be a Vert.x virtual thread
-      return (io.vertx.core.impl.WorkerExecutor) ctx.executor();
+    if (ctx != null && ctx.inThread() && ctx.executor() instanceof WorkerExecutor) {
+      // It can only be a Vert.x worker virtual thread
+      return (WorkerExecutor) ctx.executor();
     } else {
       return null;
     }

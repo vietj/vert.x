@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -8,17 +8,13 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
-package io.vertx.core.impl;
+package io.vertx.tests.http.impl;
 
-import io.vertx.core.Closeable;
-import io.vertx.core.Vertx;
-import io.vertx.core.WorkerExecutor;
+import io.vertx.core.internal.ContextInternal;
 
-/**
- * @author Thomas Segismont
- */
-public interface WorkerExecutorInternal extends WorkerExecutor {
-  Vertx vertx();
+public class VirtualThreadHttpTest extends VirtualThreadHttpTestBase {
 
-  WorkerPool getPool();
+  protected ContextInternal createVirtualThreadContext() {
+    return vertx.createVirtualThreadContext();
+  }
 }

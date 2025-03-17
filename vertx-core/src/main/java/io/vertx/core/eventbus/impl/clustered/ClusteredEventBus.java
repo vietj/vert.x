@@ -11,17 +11,20 @@
 
 package io.vertx.core.eventbus.impl.clustered;
 
-import io.vertx.core.*;
+import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
+import io.vertx.core.Promise;
+import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.impl.*;
+import io.vertx.core.impl.utils.ConcurrentCyclicSequence;
 import io.vertx.core.internal.CloseFuture;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.internal.logging.Logger;
 import io.vertx.core.internal.logging.LoggerFactory;
-import io.vertx.core.impl.utils.ConcurrentCyclicSequence;
 import io.vertx.core.internal.net.NetSocketInternal;
 import io.vertx.core.net.*;
 import io.vertx.core.net.impl.NetClientBuilder;
@@ -76,7 +79,10 @@ public final class ClusteredEventBus extends EventBusImpl {
     this.options = options.getEventBusOptions();
     this.clusterManager = clusterManager;
     this.nodeSelector = nodeSelector;
-    this.context = vertx.createEventLoopContext(null, new CloseFuture(), null, Thread.currentThread().getContextClassLoader());
+    this.context = vertx.contextBuilder()
+      .withClassLoader(Thread.currentThread().getContextClassLoader())
+      .withCloseFuture(new CloseFuture())
+      .build();
     this.client = client;
   }
 
@@ -98,7 +104,7 @@ public final class ClusteredEventBus extends EventBusImpl {
 
   /**
    * Pick a default address for clustered event bus when none was provided by either the user or the cluster manager.
-   * 
+   *
    * This is used by Vert.x launcher.
    */
   public static String defaultAddress() {
@@ -127,7 +133,7 @@ public final class ClusteredEventBus extends EventBusImpl {
 
   private NetClient createNetClient(VertxInternal vertx, NetClientOptions clientOptions) {
     NetClientBuilder builder = new NetClientBuilder(vertx, clientOptions);
-    VertxMetrics metricsSPI = vertx.metricsSPI();
+    VertxMetrics metricsSPI = vertx.metrics();
     if (metricsSPI != null) {
       builder.metrics(metricsSPI.createNetClientMetrics(clientOptions));
     }

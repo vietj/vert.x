@@ -15,7 +15,8 @@ import io.netty.channel.EventLoop;
 import io.vertx.core.*;
 import io.vertx.core.Future;
 import io.vertx.core.impl.*;
-import io.vertx.core.impl.deployment.DeploymentContext;
+import io.vertx.core.internal.deployment.Deployment;
+import io.vertx.core.internal.deployment.DeploymentContext;
 import io.vertx.core.impl.future.FailedFuture;
 import io.vertx.core.impl.future.PromiseImpl;
 import io.vertx.core.impl.future.SucceededFuture;
@@ -25,7 +26,6 @@ import io.vertx.core.spi.tracing.VertxTracer;
 
 import java.util.Objects;
 import java.util.concurrent.*;
-import java.util.function.Supplier;
 
 /**
  * This interface provides an api for vert.x core internal use only
@@ -141,8 +141,13 @@ public interface ContextInternal extends Context {
    * Execute an internal task on the internal blocking ordered executor.
    */
   default <T> Future<T> executeBlockingInternal(Callable<T> action) {
-    return owner().getInternalWorkerPool().executeBlocking(this, action, null);
+    return ExecuteBlocking.executeBlocking(owner().internalWorkerPool(), this, action, null);
   }
+
+  /**
+   * @return the context worker pool
+   */
+  WorkerPool workerPool();
 
   /**
    * @return the deployment associated with this context or {@code null}
@@ -313,58 +318,6 @@ public interface ContextInternal extends Context {
   }
 
   /**
-   * Get some local data from the context.
-   *
-   * @param key  the key of the data
-   * @param <T>  the type of the data
-   * @return the local data
-   */
-  default <T> T getLocal(ContextLocal<T> key) {
-    return getLocal(key, AccessMode.CONCURRENT);
-  }
-
-  /**
-   * Get some local data from the context.
-   *
-   * @param key  the key of the data
-   * @param <T>  the type of the data
-   * @return the local data
-   */
-  <T> T getLocal(ContextLocal<T> key, AccessMode accessMode);
-
-  /**
-   * Get some local data from the context, when it does not exist the {@code initialValueSupplier} is called to obtain
-   * the initial value.
-   *
-   * <p> The {@code initialValueSupplier} might be called multiple times when multiple threads call this method concurrently.
-   *
-   * @param key  the key of the data
-   * @param initialValueSupplier the supplier of the initial value optionally called
-   * @param <T>  the type of the data
-   * @return the local data
-   */
-  <T> T getLocal(ContextLocal<T> key, AccessMode accessMode, Supplier<? extends T> initialValueSupplier);
-
-  /**
-   * Put some local data in the context.
-   * <p>
-   * This can be used to share data between different handlers that share a context
-   *
-   * @param key  the key of the data
-   * @param value  the data
-   */
-  <T> void putLocal(ContextLocal<T> key, AccessMode accessMode, T value);
-
-  /**
-   * Remove some local data from the context.
-   *
-   * @param key  the key to remove
-   */
-  default <T> void removeLocal(ContextLocal<T> key, AccessMode accessMode) {
-    putLocal(key, accessMode, null);
-  }
-
-  /**
    * @deprecated instead use {@link #getLocal(ContextLocal, AccessMode)}
    */
   @Deprecated(forRemoval = true)
@@ -393,11 +346,6 @@ public interface ContextInternal extends Context {
    * @return the classloader associated with this context
    */
   ClassLoader classLoader();
-
-  /**
-   * @return the context worker pool
-   */
-  WorkerPool workerPool();
 
   /**
    * @return the tracer for this context
@@ -479,7 +427,7 @@ public interface ContextInternal extends Context {
 
   default String deploymentID() {
     DeploymentContext deployment = deployment();
-    return deployment != null ? deployment.deploymentID() : null;
+    return deployment != null ? deployment.id() : null;
   }
 
   default int getInstanceCount() {
@@ -540,4 +488,5 @@ public interface ContextInternal extends Context {
     return false;
   }
 
+  ContextBuilder toBuilder();
 }

@@ -15,8 +15,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.impl.deployment.DeploymentContext;
+import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.internal.deployment.DeploymentContext;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.test.core.Repeat;
@@ -158,8 +159,8 @@ public class ComplexHATest extends VertxTestBase {
 
   protected void takeDeploymentSnapshots() {
     for (int i = 0; i < vertices.length; i++) {
-      VertxInternal v = (VertxInternal)vertices[i];
-      if (!v.isKilled()) {
+      VertxImpl v = (VertxImpl) vertices[i];
+      if (!v.haManager().isKilled()) {
         deploymentSnapshots[i] = takeDeploymentSnapshot(i);
       }
     }
@@ -169,7 +170,7 @@ public class ComplexHATest extends VertxTestBase {
     Set<DeploymentContext> snapshot = ConcurrentHashMap.newKeySet();
     VertxInternal v = (VertxInternal)vertices[pos];
     for (String depID: v.deploymentIDs()) {
-      snapshot.add(v.getDeployment(depID));
+      snapshot.add(v.deploymentManager().deployment(depID));
     }
     return snapshot;
   }
@@ -177,10 +178,10 @@ public class ComplexHATest extends VertxTestBase {
   protected void kill(int pos) {
     // Save the deploymentIDs first
     takeDeploymentSnapshots();
-    VertxInternal v = (VertxInternal)vertices[pos];
+    VertxImpl v = (VertxImpl)vertices[pos];
     killedNode = pos;
     v.executeBlocking(() -> {
-      v.simulateKill();
+      v.haManager().simulateKill();
       return null;
     }, false).onComplete(onSuccess(v2 -> {}));
 
@@ -192,7 +193,7 @@ public class ComplexHATest extends VertxTestBase {
     for (int i = 0; i < nodes; i++) {
       aliveNodes.add(i);
       int pos = i;
-      ((VertxInternal)vertices[i]).failoverCompleteHandler((nodeID, haInfo, succeeded) -> {
+      ((VertxImpl)vertices[i]).failoverCompleteHandler((nodeID, haInfo, succeeded) -> {
         failedOverOnto(pos);
       });
     }
@@ -216,8 +217,8 @@ public class ComplexHATest extends VertxTestBase {
   protected void checkDeployments() {
     int totalDeployed = 0;
     for (int i = 0; i < vertices.length; i++) {
-      VertxInternal v = (VertxInternal)vertices[i];
-      if (!v.isKilled()) {
+      VertxImpl v = (VertxImpl)vertices[i];
+      if (!v.haManager().isKilled()) {
         totalDeployed += checkHasDeployments(i, i);
       }
     }

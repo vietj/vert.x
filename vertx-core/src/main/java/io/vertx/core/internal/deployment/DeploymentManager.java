@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
 
-package io.vertx.core.impl.deployment;
+package io.vertx.core.internal.deployment;
 
 import io.vertx.core.*;
 import io.vertx.core.internal.ContextInternal;
@@ -29,7 +29,7 @@ public interface DeploymentManager {
 
   Collection<DeploymentContext> deployments();
 
-  DeploymentContext getDeployment(String deploymentID);
+  DeploymentContext deployment(String deploymentID);
 
   Future<Void> undeployAll();
 

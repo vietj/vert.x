@@ -48,7 +48,11 @@ public class Http1xServerConnectionTest extends VertxTestBase {
       new VertxHttpResponseEncoder());
     vertxChannel.config().setAllocator(new io.vertx.benchmarks.HttpServerHandlerBenchmark.Alloc());
 
-    ContextInternal context = vertx.createEventLoopContext(vertxChannel.eventLoop(), null, Thread.currentThread().getContextClassLoader());
+    ContextInternal context = vertx
+      .contextBuilder()
+      .withEventLoop(vertxChannel.eventLoop())
+      .withClassLoader(Thread.currentThread().getContextClassLoader())
+      .build();
 
 
     VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {

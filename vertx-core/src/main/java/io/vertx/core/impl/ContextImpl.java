@@ -14,13 +14,14 @@ package io.vertx.core.impl;
 import io.netty.channel.EventLoop;
 import io.vertx.core.*;
 import io.vertx.core.Future;
-import io.vertx.core.impl.deployment.DeploymentContext;
+import io.vertx.core.internal.deployment.Deployment;
+import io.vertx.core.internal.WorkerPool;
+import io.vertx.core.internal.deployment.DeploymentContext;
 import io.vertx.core.internal.EventExecutor;
 import io.vertx.core.internal.logging.Logger;
 import io.vertx.core.internal.logging.LoggerFactory;
 import io.vertx.core.internal.CloseFuture;
 import io.vertx.core.internal.ContextInternal;
-import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.tracing.VertxTracer;
 
@@ -91,6 +92,9 @@ public final class ContextImpl extends ContextBase implements ContextInternal {
     if (executor instanceof WorkerExecutor) {
       WorkerExecutor workerExec = (WorkerExecutor) executor;
       fut = fut.eventually(() -> Future.<Void>future(p -> workerExec.taskQueue().shutdown(eventLoop.eventLoop, p)));
+    } else if (executor instanceof VirtualThreadMountedOnEventLoopExecutor) {
+      VirtualThreadMountedOnEventLoopExecutor exec = (VirtualThreadMountedOnEventLoopExecutor) executor;
+      exec.close();
     }
     return fut;
   }
@@ -119,7 +123,7 @@ public final class ContextImpl extends ContextBase implements ContextInternal {
 
   @Override
   public <T> Future<T> executeBlocking(Callable<T> blockingCodeHandler, boolean ordered) {
-    return workerPool.executeBlocking(this, blockingCodeHandler, ordered ? executeBlockingTasks : null);
+    return ExecuteBlocking.executeBlocking(workerPool, this, blockingCodeHandler, ordered ? executeBlockingTasks : null);
   }
 
   @Override

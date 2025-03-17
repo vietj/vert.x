@@ -32,7 +32,10 @@ public interface ConnectionPool<C> {
    */
   Function<ContextInternal, ContextInternal> EVENT_LOOP_CONTEXT_PROVIDER = ctx -> {
     VertxInternal vertx = ctx.owner();
-    return vertx.createEventLoopContext(ctx.nettyEventLoop(), vertx.getWorkerPool(), null);
+    return vertx.contextBuilder()
+      .withEventLoop(ctx.nettyEventLoop())
+      .withWorkerPool(vertx.workerPool())
+      .build();
   };
 
   static <C> ConnectionPool<C> pool(PoolConnector<C> connector, int[] maxSizes) {

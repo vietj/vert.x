@@ -18,16 +18,15 @@ import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.SocketAddress;
-import io.vertx.core.spi.VertxMetricsFactory;
 import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.core.spi.cluster.RegistrationUpdateEvent;
 import io.vertx.core.spi.metrics.TCPMetrics;
 import io.vertx.core.spi.metrics.VertxMetrics;
+import io.vertx.test.core.TestUtils;
 import io.vertx.test.fakecluster.FakeClusterManager;
+import io.vertx.test.tls.Cert;
 import io.vertx.tests.shareddata.AsyncMapTest.SomeClusterSerializableObject;
 import io.vertx.tests.shareddata.AsyncMapTest.SomeSerializableObject;
-import io.vertx.core.spi.cluster.RegistrationUpdateEvent;
-import io.vertx.test.core.TestUtils;
-import io.vertx.test.tls.Cert;
 import org.junit.Test;
 
 import java.io.InvalidClassException;
@@ -259,7 +258,7 @@ public class ClusteredEventBusTest extends ClusteredEventBusTestBase {
     testSubsRemoved(latch -> {
       VertxInternal vi = (VertxInternal) vertices[1];
       Promise<Void> promise = vi.getOrCreateContext().promise();
-      vi.getClusterManager().leave(promise);
+      vi.clusterManager().leave(promise);
       promise.future().onComplete(onSuccess(v -> {
         latch.countDown();
       }));
@@ -682,7 +681,7 @@ public class ClusteredEventBusTest extends ClusteredEventBusTestBase {
   public void testPreserveMessageOrderingOnContext() {
     int num = 256;
     startNodes(2);
-    ClusterManager clusterManager = ((VertxInternal) vertices[0]).getClusterManager();
+    ClusterManager clusterManager = ((VertxInternal) vertices[0]).clusterManager();
     if (clusterManager instanceof FakeClusterManager) {
       // Other CM will exhibit latency for this one we must fake it
       FakeClusterManager fakeClusterManager = (FakeClusterManager) clusterManager;
@@ -695,7 +694,7 @@ public class ClusteredEventBusTest extends ClusteredEventBusTestBase {
       if (val == num - 1) {
         testComplete();
       }
-    });
+    }).completion().await();
     Context ctx = vertices[0].getOrCreateContext();
     ctx.runOnContext(v -> {
       for (int i = 0;i < num;i++) {

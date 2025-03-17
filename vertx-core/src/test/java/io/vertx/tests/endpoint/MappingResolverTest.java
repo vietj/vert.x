@@ -34,7 +34,7 @@ public class MappingResolverTest extends VertxTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    AddressResolver ar = AddressResolver.mappingResolver(addr -> {
+    AddressResolver<?> ar = AddressResolver.mappingResolver(addr -> {
       Function<Address, List<SocketAddress>> m = mapping;
       return m != null ? m.apply(addr) : null;
     });
