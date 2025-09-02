@@ -16,6 +16,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryContext;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.test.core.Repeat;
 import io.vertx.test.core.VertxTestBase;
 import org.junit.Test;
 
@@ -383,8 +384,10 @@ public class EventBusInterceptorTest extends VertxTestBase {
     assertSame(expected, caught.get());
   }
 
+  @Repeat(times = 1000)
   @Test
   public void testInboundInterceptorFromNonVertxThreadDispatch() {
+    disableThreadChecks();
     AtomicReference<Thread> interceptorThread = new AtomicReference<>();
     AtomicReference<Thread> th = new AtomicReference<>();
     eb.addInboundInterceptor(sc -> {
@@ -394,12 +397,13 @@ public class EventBusInterceptorTest extends VertxTestBase {
       }).start();
     });
     eb.addInboundInterceptor(sc -> {
+      assertTrue(!Context.isOnEventLoopThread());
       interceptorThread.set(Thread.currentThread());
     });
     eb.consumer("some-address", msg -> {
     });
     eb.send("some-address", "armadillo");
-    waitUntil(() -> interceptorThread.get() != null);
+    assertWaitUntil(() -> interceptorThread.get() != null);
     assertSame(th.get(), interceptorThread.get());
   }
 
