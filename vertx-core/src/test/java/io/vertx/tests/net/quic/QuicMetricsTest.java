@@ -13,6 +13,7 @@ package io.vertx.tests.net.quic;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.*;
 import io.vertx.core.spi.VertxMetricsFactory;
+import io.vertx.test.core.Repeat;
 import io.vertx.test.core.VertxTestBase;
 import io.vertx.test.fakemetrics.FakeMetricsFactory;
 import io.vertx.test.fakemetrics.FakeQuicEndpointMetrics;
@@ -47,6 +48,7 @@ public class QuicMetricsTest extends VertxTestBase {
     super.tearDown();
   }
 
+  @Repeat(times = 1000)
   @Test
   public void testSingleServer() throws Exception {
     testMetrics(1);
