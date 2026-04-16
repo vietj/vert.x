@@ -13,6 +13,7 @@ package io.vertx.tests.net.quic;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.*;
 import io.vertx.core.spi.VertxMetricsFactory;
+import io.vertx.test.core.Repeat;
 import io.vertx.test.core.VertxTestBase;
 import io.vertx.test.fakemetrics.FakeMetricsFactory;
 import io.vertx.test.fakemetrics.FakeQuicEndpointMetrics;
@@ -54,6 +55,7 @@ public class QuicMetricsTest extends VertxTestBase {
     super.tearDown();
   }
 
+  @Repeat(times = 1000)
   @Test
   public void testSingleServer() throws Exception {
     testMetrics(1);
@@ -75,11 +77,13 @@ public class QuicMetricsTest extends VertxTestBase {
     do {
       QuicServer server = vertx.createQuicServer(new QuicServerConfig().setLoadBalanced(numberOfServers > 1), QuicServerTest.SSL_OPTIONS);
       server.connectHandler(conn -> {
+        System.out.println("client connected");
         FakeQuicEndpointMetrics serverMetrics = FakeTransportMetrics.quicMetricsOf(server);
         Assert.assertNull(serverMetrics.protocol());
         Assert.assertEquals(1, serverMetrics.connectionCount());
         serverConnectionMetric.set(serverMetrics.firstMetric(conn.remoteAddress()));
         conn.streamHandler(stream -> {
+          System.out.println("client stream open");
           stream.handler(buff -> stream.write(buff));
           stream.endHandler(v -> stream.end());
         });
@@ -103,12 +107,23 @@ public class QuicMetricsTest extends VertxTestBase {
       latch.countDown();
     });
     clientStream.write(Buffer.buffer("ping")).await();
+    System.out.println("step #1");
     assertWaitUntil(() -> clientConnectionMetric.openStreams.get() == 1, 30_000);
+    System.out.println("step #2");
     assertWaitUntil(() -> serverConnectionMetric.get().openStreams.get() == 1, 30_000);
+    System.out.println("step #3");
     clientStream.end().await();
-    assertWaitUntil(() -> clientConnectionMetric.openStreams.get() == 0, 30_000);
+    System.out.println("step #4");
+    try {
+      assertWaitUntil(() -> clientConnectionMetric.openStreams.get() == 0, 30_000);
+    } finally {
+      System.out.println(clientConnectionMetric);
+    }
+    System.out.println("step #5");
     assertWaitUntil(() -> serverConnectionMetric.get().openStreams.get() == 0, 30_000);
+    System.out.println("step #6");
     TestUtils.awaitLatch(latch);
+    System.out.println("step #7");
     Assert.assertEquals(List.of(Buffer.buffer("ping")), received);
     FakeQuicEndpointMetrics serverMetrics = FakeTransportMetrics.quicMetricsOf(servers.get(0));
     Assert.assertNull(serverMetrics.protocol());
