@@ -71,10 +71,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongPredicate;
-import java.util.function.Supplier;
+import java.util.function.*;
+import java.util.stream.Collectors;
 
 import static io.vertx.test.core.TestUtils.*;
 import static io.vertx.test.core.VertxTestBase.ENABLED_CIPHER_SUITES;
@@ -2173,6 +2171,10 @@ public class NetTest {
     }
   }
 
+  @Rule
+  public RepeatRule rule = new RepeatRule();
+
+  @Repeat(times = 20)
   @Test
   public void testListenDomainSocketAddressNative(Checkpoint checkpoint, @ProvidedBy(NativeVertxProvider.class) Vertx vx) throws Exception {
     assumeTrue("Native transport must be enabled", vx.isNativeTransportEnabled());
@@ -2196,14 +2198,20 @@ public class NetTest {
       NetServer server = vx
         .createNetServer()
         .connectHandler(so -> {
-          so.end(Buffer.buffer(sockAddress.path()));
+          so.handler(v -> {
+            System.out.println("got end");
+            so.end(Buffer.buffer(sockAddress.path()));
+          });
         });
       startServer(sockAddress, server);
       addresses.add(sockAddress);
     }
-    client = vx.createNetClient();
+    client = vx.createNetClient(new NetClientOptions().setConnectTimeout(1000));
+    AtomicInteger remaining = new AtomicInteger(len * len);
     for (int i = 0;i < len;i++) {
+      int vali = i;
       for (int j = 0;j < len;j++) {
+        int valj = j;
         SocketAddress sockAddress = addresses.get(i);
         client
           .connect(sockAddress)
@@ -2214,6 +2222,7 @@ public class NetTest {
               assertEquals(sockAddress.path(), received.toString());
               latch.countDown();
             });
+            so.write("test");
           }));
       }
     }
