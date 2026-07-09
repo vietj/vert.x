@@ -82,6 +82,7 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assumeMlKemAvailable();
 
     HttpServerOptions serverOptions = new HttpServerOptions()
+      .setSsl(true)
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST);
     serverOptions.setSslEngineOptions(new OpenSSLEngineOptions());
