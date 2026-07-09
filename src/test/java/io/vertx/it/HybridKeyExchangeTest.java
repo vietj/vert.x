@@ -82,9 +82,9 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assumeMlKemAvailable();
 
     HttpServerOptions serverOptions = new HttpServerOptions()
-      .setSsl(true)
       .setPort(DEFAULT_HTTPS_PORT)
-      .setHost(DEFAULT_HTTPS_HOST);
+      .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true);
     serverOptions.setSslEngineOptions(new OpenSSLEngineOptions());
     serverOptions.getSslOptions()
       .setPqcEnforcementPolicy(PqcEnforcementPolicy.STRICT)
@@ -115,13 +115,13 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assertEquals("strict-ok", bodyBuffer.toString());
   }
 
-  @Ignore
   @Test
   public void testStrictPolicyRejectsNonPqcClient() throws Exception {
     assumeMlKemAvailable();
     HttpServerOptions serverOptions = new HttpServerOptions()
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true)
       .setSslEngineOptions(new OpenSSLEngineOptions());
     serverOptions
       .getSslOptions()
@@ -147,13 +147,13 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     await();
   }
 
-  @Ignore
   @Test
   public void testClientNegotiatedPolicyAllowsNonPqcClient() throws Exception {
     assumeMlKemAvailable();
     HttpServerOptions serverOptions = new HttpServerOptions()
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true)
       .setSslEngineOptions(new OpenSSLEngineOptions());
     serverOptions
       .getSslOptions()
@@ -180,7 +180,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assertEquals("client-negotiated-ok", bodyBuffer.toString());
   }
 
-  @Ignore
   @Test
   public void testClientNegotiatedPolicyWithPqcClient() throws Exception {
     assumeMlKemAvailable();
@@ -188,6 +187,7 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     HttpServerOptions serverOptions = new HttpServerOptions()
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true)
       .setSslEngineOptions(new OpenSSLEngineOptions());
     serverOptions
       .getSslOptions()
@@ -217,7 +217,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assertEquals("pqc-negotiated-ok", bodyBuffer.toString());
   }
 
-  @Ignore
   @Test
   public void testStrictPolicyMTLS() throws Exception {
     assumeMlKemAvailable();
@@ -261,7 +260,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assertEquals("mtls-strict-ok", buffer.toString());
   }
 
-  @Ignore
   @Test
   public void testStrictPolicyMTLSRejectsNonPqcClient() throws Exception {
     assumeMlKemAvailable();
@@ -297,7 +295,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     await();
   }
 
-  @Ignore
   @Test
   public void testStrictPolicyFailsServerStartWhenJdkPqcNotAvailable() throws Exception {
     Assume.assumeFalse("JDK PQC is available, skipping", JdkSSLEngineOptions.isPqcAvailable());
@@ -305,6 +302,7 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     HttpServerOptions serverOptions = new HttpServerOptions()
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true)
       .setSslEngineOptions(new JdkSSLEngineOptions());
     serverOptions.getSslOptions()
       .setPqcEnforcementPolicy(PqcEnforcementPolicy.STRICT)
@@ -320,7 +318,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     await();
   }
 
-  @Ignore
   @Test
   public void testStrictPolicyFailsClientStartWhenJdkPqcNotAvailable() throws Exception {
     Assume.assumeFalse("JDK PQC is available, skipping", JdkSSLEngineOptions.isPqcAvailable());
@@ -341,7 +338,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     }
   }
 
-  @Ignore
   @Test
   public void testStrictPolicyWithSNI() throws Exception {
     assumeMlKemAvailable();
@@ -349,6 +345,7 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     HttpServerOptions serverOptions = new HttpServerOptions()
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true)
       .setSni(true)
       .setSslEngineOptions(new OpenSSLEngineOptions());
     serverOptions.getSslOptions()
@@ -376,7 +373,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assertEquals("sni-strict-ok", body.toString());
   }
 
-  @Ignore
   @Test
   public void testRelaxedPolicyWithCustomGroups() throws Exception {
     assumeMlKemAvailable();
@@ -384,6 +380,7 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     HttpServerOptions serverOptions = new HttpServerOptions()
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true)
       .setSslEngineOptions(new OpenSSLEngineOptions());
     serverOptions.getSslOptions()
       .setPqcEnforcementPolicy(PqcEnforcementPolicy.RELAXED)
@@ -412,7 +409,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assertEquals("relaxed-custom-ok", body.toString());
   }
 
-  @Ignore
   @Test
   public void testRelaxedPolicyDefaultGroups() throws Exception {
 
@@ -441,7 +437,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     assertEquals("relaxed-default-ok", body.toString());
   }
 
-  @Ignore
   @Test
   public void testStrictPolicyWithRawNettySocket() throws Exception {
     assumeMlKemAvailable();
@@ -449,6 +444,7 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     HttpServerOptions serverOptions = new HttpServerOptions()
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true)
       .setSslEngineOptions(new OpenSSLEngineOptions());
     serverOptions.getSslOptions()
       .setPqcEnforcementPolicy(PqcEnforcementPolicy.STRICT)
@@ -504,7 +500,6 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     }
   }
 
-  @Ignore
   @Test
   public void testStrictPolicyMTLSWithRawNettySocket() throws Exception {
     assumeMlKemAvailable();
@@ -512,6 +507,7 @@ public class HybridKeyExchangeTest extends HttpTestBase {
     HttpServerOptions serverOptions = new HttpServerOptions()
       .setPort(DEFAULT_HTTPS_PORT)
       .setHost(DEFAULT_HTTPS_HOST)
+      .setSsl(true)
       .setClientAuth(ClientAuth.REQUIRED)
       .setSslEngineOptions(new OpenSSLEngineOptions());
     serverOptions.getSslOptions()
