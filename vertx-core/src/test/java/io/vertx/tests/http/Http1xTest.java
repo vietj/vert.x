@@ -73,6 +73,9 @@ import static org.junit.Assert.*;
  */
 public class Http1xTest extends HttpTest {
 
+  @Rule
+  public RepeatRule repeatRule = new RepeatRule();
+
   public Http1xTest() {
     super(HttpConfigurator.Http1x.DEFAULT);
   }
@@ -1370,10 +1373,27 @@ public class Http1xTest extends HttpTest {
     checkpoint.awaitSuccess();
   }
 
+  @Repeat(times = 50000)
   @Test
   public void testPipeliningPause(Checkpoint checkpoint) throws Exception {
+    Queue<String> events = new ConcurrentLinkedQueue<>();
+    long start = System.nanoTime();
+    AtomicInteger handled = new AtomicInteger();
+    AtomicInteger written = new AtomicInteger();
     Promise<Void> signal = Promise.promise();
+    server.connectionHandler(conn -> {
+      debugEvent(events, start, "server connection " + conn.remoteAddress(), null);
+      conn.exceptionHandler(err -> debugEvent(events, start, "server connection exception", err));
+      conn.closeHandler(v -> debugEvent(events, start, "server connection closed", null));
+      ((HttpServerConnection) conn).channelHandlerContext().pipeline().addFirst("debug", debugHandler(events, start, "server"));
+    });
+    server.invalidRequestHandler(req -> {
+      debugEvent(events, start, "server invalid request " + req.method() + " " + req.uri(), req.decoderResult().cause());
+      HttpServerRequest.DEFAULT_INVALID_REQUEST_HANDLER.handle(req);
+    });
     server.requestHandler(req -> {
+      handled.incrementAndGet();
+      req.exceptionHandler(err -> debugEvent(events, start, "server request exception", err));
       Future<Void> f = signal.future();
       if (f.isComplete()) {
         req.response().end();
@@ -1387,6 +1407,9 @@ public class Http1xTest extends HttpTest {
     startServer(testAddress);
     NetClient client = vertx.createNetClient();
     NetSocket socket = client.connect(testAddress).await();
+    socket.exceptionHandler(err -> debugEvent(events, start, "client socket exception", err));
+    socket.closeHandler(v -> debugEvent(events, start, "client socket closed", null));
+    ((NetSocketInternal) socket).channelHandlerContext().pipeline().addFirst("debug", debugHandler(events, start, "client"));
     Buffer content = Buffer.buffer(TestUtils.randomAlphaString(1024));
     Buffer request = Buffer.buffer("POST / HTTP/1.1\r\n" +
       "content-length: " + content.length() + "\r\n" +
@@ -1396,13 +1419,27 @@ public class Http1xTest extends HttpTest {
 
     task[0] = times -> {
       while (!socket.writeQueueFull()) {
+        written.incrementAndGet();
         socket.write(request);
       }
       if (times > 5) {
+        debugEvent(events, start, "signal written=" + written.get() + " handled=" + handled.get(), null);
         signal.succeed();
+        written.incrementAndGet();
         socket
           .write(request)
-          .onComplete(checkpoint);
+          .onComplete(ar -> {
+            if (ar.failed()) {
+              debugEvent(events, start, "last write failed written=" + written.get() + " handled=" + handled.get(), ar.cause());
+              vertx.setTimer(500, id -> {
+                System.out.println("*** testPipeliningPause failure events");
+                events.forEach(System.out::println);
+                checkpoint.complete(null, ar.cause());
+              });
+            } else {
+              checkpoint.succeed();
+            }
+          });
       } else {
         vertx.runOnContext(v -> {
           task[0].accept(times + 1);
@@ -1411,6 +1448,45 @@ public class Http1xTest extends HttpTest {
     };
     task[0].accept(0);
     checkpoint.awaitSuccess();
+    client.close().await();
+  }
+
+  private static void debugEvent(Queue<String> events, long start, String msg, Throwable err) {
+    StringBuilder sb = new StringBuilder()
+      .append(String.format("%.3fms", (System.nanoTime() - start) / 1_000_000D))
+      .append(" [").append(Thread.currentThread().getName()).append("] ")
+      .append(msg);
+    if (err != null) {
+      java.io.StringWriter sw = new java.io.StringWriter();
+      err.printStackTrace(new java.io.PrintWriter(sw));
+      sb.append(" ").append(sw);
+    }
+    events.add(sb.toString());
+  }
+
+  private static ChannelDuplexHandler debugHandler(Queue<String> events, long start, String side) {
+    return new ChannelDuplexHandler() {
+      @Override
+      public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        debugEvent(events, start, side + " channel close()", new Exception("close initiated"));
+        super.close(ctx, promise);
+      }
+      @Override
+      public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        debugEvent(events, start, side + " channel exceptionCaught", cause);
+        super.exceptionCaught(ctx, cause);
+      }
+      @Override
+      public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        debugEvent(events, start, side + " channel inactive", null);
+        super.channelInactive(ctx);
+      }
+      @Override
+      public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        debugEvent(events, start, side + " channel event " + evt, null);
+        super.userEventTriggered(ctx, evt);
+      }
+    };
   }
 
   @Test
